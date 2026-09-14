@@ -1,0 +1,22 @@
+# 팔레트는 assets/tokens.css 와 같은 값이다. 한쪽만 바꾸지 말 것.
+# borderColor · baseRadius · [theme.sidebar] 는 Streamlit 버전에 따라 없을 수 있다.
+# 실행 후 경고가 뜨면 해당 키를 지운다.
+[theme]
+base = "light"
+primaryColor = "#0E6E62"
+backgroundColor = "#FFFFFF"
+secondaryBackgroundColor = "#F6F8F7"
+textColor = "#14201E"
+font = "sans serif"
+
+[server]
+headless = true
+runOnSave = true
+maxUploadSize = 50
+
+[browser]
+gatherUsageStats = false
+
+[client]
+toolbarMode = "minimal"
+showErrorDetails = true

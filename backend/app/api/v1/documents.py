@@ -44,7 +44,7 @@ def list_documents(
 
 # 문서 등록 
 @router.post("", response_model=DocumentCreateOut, status_code=201)
-async def upload_document(
+def upload_document(
     doc_id: Annotated[str, Form()],
     title: Annotated[str, Form()],
     dept_id: Annotated[str, Form()],

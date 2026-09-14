@@ -1,0 +1,53 @@
+/* ===========================================================
+   tokens.css — 색·간격·반경 변수만.
+   이 파일 하나만 바꾸면 전체 화면의 색이 바뀐다.
+   ★ 학생은 이 파일을 수정하지 않는다. 통일이 깨진다.
+   =========================================================== */
+:root {
+  /* 바탕 */
+  --ag-bg:        #F6F8F7;   /* 페이지 바탕 */
+  --ag-surface:   #FFFFFF;   /* 카드 */
+  --ag-sb:        #EEF3F1;   /* 사이드바 · 표 헤더 */
+  --ag-sb-ink:    #3A4A47;   /* 사이드바 글씨 */
+
+  /* 글자 */
+  --ag-ink:       #14201E;   /* 본문 */
+  --ag-muted:     #66766F;   /* 보조 텍스트 */
+
+  /* 선 */
+  --ag-line:      #DCE4E1;
+  --ag-line-2:    #C6D2CE;
+
+  /* 액센트 — 버튼·선택 */
+  --ag-accent:      #0E6E62;
+  --ag-accent-soft: #E0EFEB;
+  --ag-accent-ink:  #0A544A;
+
+  /* 상태 3종 — 액센트와 절대 섞지 않는다.
+     "승인됨"과 "선택됨"이 헷갈리면 안 된다. */
+  --ag-ok:        #2C6E45;   --ag-ok-soft:   #E2F0E7;   /* 승인·완료·현행 */
+  --ag-wait:      #9B5E0B;   --ag-wait-soft: #F7ECD9;   /* 대기·진행중 */
+  --ag-no:        #9E2B2B;   --ag-no-soft:   #F8E5E4;   /* 반려·위험·만료 */
+
+  /* 형태 */
+  --ag-radius:    4px;       /* Streamlit 기본보다 각지게 */
+  --ag-radius-sm: 3px;
+
+  /* 간격 (4의 배수) */
+  --ag-s1: 4px;  --ag-s2: 9px;  --ag-s3: 16px;
+  --ag-s4: 22px; --ag-s5: 32px; --ag-s6: 46px;
+
+  /* 세로 리듬 — 표 행·단계 목록의 위아래 여백 */
+  --ag-row-y: 13px;
+  --ag-row-x: 14px;
+
+  /* 글자 크기 — 작은 글씨는 강의실 뒤에서도 읽혀야 한다 */
+  --ag-fs-xs: 12.5px;  --ag-fs-sm: 14px;   --ag-fs-md: 15px;
+  --ag-fs-lg: 17.5px;  --ag-fs-xl: 21.5px; --ag-fs-2xl: 27px;
+
+  /* 줄 간격 */
+  --ag-lh: 1.8;
+
+  /* 모노스페이스 — 메타 푸터·감사 로그 */
+  --ag-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+}
