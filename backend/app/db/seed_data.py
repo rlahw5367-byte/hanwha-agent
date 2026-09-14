@@ -1,7 +1,9 @@
 from __future__ import annotations
+
 from datetime import date
 
-# 부서 데이터
+TEMP_PASSWORD = "passwd1234!"
+
 DEPARTMENTS: list[dict] = [
     {"id": "HR", "name": "경영지원팀"},
     {"id": "HRGA", "name": "인사총무"},
@@ -11,7 +13,6 @@ DEPARTMENTS: list[dict] = [
     {"id": "PMO", "name": "PMO"},
 ]
 
-# 사용자 데이터
 USERS: list[dict] = [
     {"id": 1, "emp_no": "2019-0412", "name": "김민준", "dept_id": "INFRA2",
      "role": "일반", "clearance": "일반"},
@@ -29,7 +30,8 @@ USERS: list[dict] = [
      "role": "팀장", "clearance": "3급"},
 ]
 
-# 문서 데이터
+
+
 DOCUMENTS: list[dict] = [
     {
         "id": "DOC-HR-014", "title": "국내출장 여비 규정", "dept_id": "HRGA",
