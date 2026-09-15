@@ -95,4 +95,3 @@ def stats(*, emp_no: str | None = None) -> dict:
         "expired": sum(1 for row in rows if row["status"] == "만료"),
         "reindexing" : sum(1 for row in rows if row["index_status"] == "재임베딩 ")
     }
-

@@ -1,11 +1,14 @@
-.env
-.venv/
-
+# github에 올리지 않을 목록 작성
 sandbox/
+.venv/
 
 __pycache__/
 *.py[cod]
 .pytest_cache/
+
+.env
+uploads/
+*.db
 
 .vscode/
 .idea/
