@@ -56,5 +56,5 @@ class AuthFailed(AgentError):
     status_code = 401
     code = "auth_failed"
 
-    def __init__(self, message:str = "사번 또는 비밀번호가 올바르지 않습니다.", *, detail:str | None):
+    def __init__(self, message:str = "사번 또는 비밀번호가 올바르지 않습니다.", *, detail:str | None = None):
         super().__init__(message, detail=detail)
