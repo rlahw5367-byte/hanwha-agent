@@ -6,6 +6,8 @@ from app.api.v1 import auth, documents # 하나로 통합
 from app.core.exceptions import AgentError
 from contextlib import asynccontextmanager
 from app.core.logging import setup_logging
+from fastapi.exceptions import RequestValidationError
+
 
 # lifespan 함수 정의 
 @asynccontextmanager
@@ -48,4 +50,16 @@ async def handle_agent_error(
             "message": str(exc), 
             "detail": None
         }
+    )
+
+# 사번 입력 안하고 로그인시 비번 로그에 노출 -> 예외로 잡기 
+@app.exception_handler(RequestValidationError)
+async def handle_validation_error(request: Request, exc: RequestValidationError) -> JSONResponse:
+    # exc.errors() 에는 사용자가 보낸 값이 통째로 들어 있다. 필드 이름만 돌려주고 값은 감춘다.
+    fields = ", ".join(
+        ".".join(str(p) for p in e["loc"][1:]) or "요청 본문" for e in exc.errors()
+    )
+    return JSONResponse(
+        status_code=422,
+        content={"code": "validation_failed", "message": f"입력값을 확인하세요 — {fields}", "detail": None},
     )
