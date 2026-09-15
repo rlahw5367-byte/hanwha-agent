@@ -18,14 +18,14 @@ def count_rows(session: Session) -> dict[str, int]:
         "versions": session.scalar(select(func.count()).select_from(DocumentVersion)) or 0,
     }
 
-
+# 데이터 적재
 def seed_all(session: Session | None = None) -> dict[str, int]:
     if session is not None:
         return _seed(session)
     with session_scope() as s:
         return _seed(s)
 
-
+# 적재 처리
 def _seed(session: Session) -> dict[str, int]:
 
     if session.scalar(select(func.count()).select_from(Document)):
