@@ -20,7 +20,7 @@ def init_state() -> None:
 
 # 현재 사용자 정보: 로그인 -> 사용자 정보, 비 로그인 -> None
 def current_user() -> dict | None:
-    return st.session_state.get("User")
+    return st.session_state.get("user")
     
 
 # 로그인 여부 확인: 로그인하면 True, 아니면 False
