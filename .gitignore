@@ -9,6 +9,7 @@ __pycache__/
 .env
 uploads/
 *.db
+*.pem
 
 .vscode/
 .idea/
