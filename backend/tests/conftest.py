@@ -1,5 +1,7 @@
 import pytest
+from fastapi.testclient import TestClient
 
+from app.main import app
 
 @pytest.fixture
 def travel_doc() -> dict:
@@ -12,3 +14,9 @@ def travel_doc() -> dict:
         "file_format": "docx",
         "status": "현행",
     }
+
+
+@pytest.fixture
+def client():                       
+    with TestClient(app) as c:
+        yield c

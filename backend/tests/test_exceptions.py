@@ -7,7 +7,7 @@ from app.core.exceptions import (
 )
 
 CASES = [
-    (NotFound, 404, "not_found"),
+    (NotFound, 404, "not_found_error"),
     (PermissionDenied, 403, "permission_denied"),
     (ValidationFailed, 422, "validation_failed"),
     (GuardTripped, 400, "guard_tripped"),
@@ -18,18 +18,18 @@ CASES = [
 ]
 
 
-@pytest.mark.parametrize("exc_cls,status,code", CASES)  # 실패 클래스 이름이 로그에 박혀서 확인이 수월해짐
+@pytest.mark.parametrize("exc_cls,status,code", CASES)
 def test_domain_exception_maps_to_status_and_code(exc_cls, status, code) -> None:
     exc = exc_cls("문서를 찾을 수 없습니다: DOC-HR-014")
     assert exc.status_code == status
     assert exc.code == code
 
-# AgentError 상속받는지 검사
+
 def test_every_domain_exception_is_agent_error() -> None:
     for exc_cls, _status, _code in CASES:
         assert issubclass(exc_cls, AgentError)
 
-# detail 검사
+
 def test_detail_is_optional_and_kept(travel_doc) -> None:
     없음 = NotFound(f"문서를 찾을 수 없습니다: {travel_doc['doc_id']}")
     assert 없음.detail is None
