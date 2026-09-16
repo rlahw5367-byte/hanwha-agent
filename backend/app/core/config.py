@@ -31,3 +31,8 @@ class Settings(BaseSettings):
 @lru_cache
 def get_settings() -> Settings:
     return Settings()
+
+def mask(secret: str | None, keep: int = 8) -> str:
+    if not secret:
+        return "(없음)"
+    return f"{secret[:keep]}...({len(secret)}자)"
