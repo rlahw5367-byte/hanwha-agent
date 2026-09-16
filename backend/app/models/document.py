@@ -24,6 +24,7 @@ class Document(Base, TimestampMixin):
         order_by="DocumentVersion.version",
     )
 
+    # 현행(시행중인) 버전 리턴
     @property
     def current(self) -> "DocumentVersion | None":
         for v in self.versions:
