@@ -117,8 +117,8 @@ class ClaudeLLM:
 
 # 모델이 코드펜스로 감싸서 보낸 경우, 원활한 파싱을 위한 전처리 필수
 def _extract_json(text: str) -> dict:
-        # 정규 표현식으로 원하는 부분만 추출
-		fenced = re.search(r"```(?:json)?\s*(\{.*?\})\s*```", text, re.S)
+    # 정규 표현식으로 원하는 부분만 추출
+    fenced = re.search(r"```(?:json)?\s*(\{.*?\})\s*```", text, re.S)
     raw = fenced.group(1) if fenced else text
 
     # 펜스가 없으면 앞뒤에 설명 문장이 붙어있을 수 있다. 첫 { 와 마지막 } 사이만 남긴다.
