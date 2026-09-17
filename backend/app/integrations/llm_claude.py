@@ -37,10 +37,6 @@ class ClaudeLLM:
         self._client = Anthropic(api_key=key.get_secret_value()) 
         self._model = settings.llm_model
 
-
-class ClaudeLLM:
-    name = 'claude'
-
     # SDK와 키를 확인하고 클라이언트를 만들기 
     def __init__(self) -> None:
         try:
