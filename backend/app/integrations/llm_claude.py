@@ -8,16 +8,26 @@ from app.core.exceptions import ExternalServiceError
 from app.core.logging import get_logger
 from app.integrations.ports import LLMResult
 
+# 로거 생성
 log = get_logger(__name__)
+
+# 프롬프트 파일의 서식지
 PROMPTS = Path(__file__).resolve().parent.parent / 'agent' / 'prompts'
 PRICING = {'input': 1.0, 'cache_write': 1.25, 'cache_read': 0.1, 'output': 5.0}
+
+# 환율
 USD_KRW = 1400.0
 
+# 호출 한번의 비용을 원화로 어림 계산해주는 함수
 def estimate_cost_krw(input_tok: int, output_tok: int) -> float:
     
     usd = input_tok / 1000000 * PRICING['input'] + output_tok / 1000000 * PRICING['output']
     return round(usd * USD_KRW, 1)
 
+# 프롬프트 파일을 하나 읽어서 문자열로 리턴해주는 함수 추가 
+def _load_prompt(name: str) -> str:
+    path = PROMPTS / name
+    return path.read_text(encoding="utf-8") if path.exists() else ""
 
 # Claude Messages API 어댑터 
 class ClaudeLLM:
@@ -70,7 +80,7 @@ class ClaudeLLM:
         elapsed = int((time.perf_counter() - started) * 1000) 
         # 결과 리턴 
         return text, usage, elapsed
-
+    
     # 근거 문서를 싣고 질문에 답하는 함수 : ports.py의 LLMPort 메서드 구현체 
     def answer(self, *, question: str, contexts: list[dict], user: dict) -> LLMResult: 
         # question : 사용자 질문 
