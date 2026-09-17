@@ -37,20 +37,6 @@ class ClaudeLLM:
         self._client = Anthropic(api_key=key.get_secret_value()) 
         self._model = settings.llm_model
 
-    # SDK와 키를 확인하고 클라이언트를 만들기 
-    def __init__(self) -> None:
-        try:
-            from anthropic import Anthropic
-        except ImportError as exc:
-            raise ExternalServiceError("anthropic 패키지가 설치 되어 있지 않습니다.") from exc
-
-        settings = get_settings() 
-        key = settings.anthropic_api_key  # SecretStr | None 값이 비어있을 수도 있다. 
-        if key is None:
-            raise ExternalServiceError("ANTHROPIC_API_KEY 가 비어있습니다.")
-        self._client = Anthropic(api_key=key.get_secret_value()) 
-        self._model = settings.llm_model
-
     # 공통으로 사용하는 호출 함수 : Messages API를 한번 호출하고, 본문,토큰,걸린시간을 리턴 
     def _call(self, system: str, user_text: str) -> tuple[str, dict, int]:
         # system : 시스템 프롬프트 한 덩어리 
