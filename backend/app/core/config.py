@@ -13,7 +13,7 @@ class Settings(BaseSettings):
     app_mode: str = Field(default="mock", pattern=r"^(mock|live)$")
     anthropic_api_key: SecretStr | None = None
     llm_model: str = "claude-haiku-4-5"
-    max_token: int = Field(default=400, ge=1, le=8192)
+    max_tokens: int = Field(default=400, ge=1, le=8192)
     temperature: float = Field(default=0.0, ge=0.0, le=1.0)
     daily_call_limit: int = Field(default=200, ge=1)
     max_input_chars: int = Field(default=200, ge=1)
