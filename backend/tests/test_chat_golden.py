@@ -14,11 +14,9 @@ from app.services import chat_service
 GOLDEN_PATH = Path(__file__).resolve().parent / "golden" / "chat_golden.json"
 GOLDEN = json.loads(GOLDEN_PATH.read_text(encoding="utf-8"))
 
-
+# 가짜 LLM
 class StubLLM:
-
     name = "stub"
-
     def __init__(self, replies: list[str]) -> None:
         self.replies = list(replies)
         self.calls = 0
@@ -36,7 +34,7 @@ class StubLLM:
             latency_ms=900,
         )
 
-
+# 판정 함수
 def check(case: dict, out) -> list[str]:
     expect = case["expect"]
     problems: list[str] = []
@@ -70,11 +68,11 @@ def check(case: dict, out) -> list[str]:
 
     return problems
 
-
+# 문항 문자열 생성 함수
 def _question_of(case: dict) -> str:
     return case["question"] * case.get("repeat", 1)
 
-
+# 골든셋 한 문항 돌리기 (메인)
 @pytest.mark.parametrize("case", GOLDEN, ids=[c["id"] for c in GOLDEN])
 def test_golden(case: dict, monkeypatch) -> None:
     
