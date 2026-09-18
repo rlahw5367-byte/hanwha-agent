@@ -2,7 +2,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse 
 # from app.api.v1.documents import router as documents_router  # 지우기 
 # from app.api.v1.auth import router as auth_router  # 지우기 
-from app.api.v1 import auth, documents # 하나로 통합 
+from app.api.v1 import auth, documents, chat # 하나로 통합 
 from app.core.exceptions import AgentError
 from contextlib import asynccontextmanager
 from app.core.logging import setup_logging
@@ -38,6 +38,11 @@ app.include_router(
     prefix="/api/v1"
 )
 
+app.include_router(
+    chat.router,
+    prefix="/api/v1"
+)
+
 @app.exception_handler(AgentError)
 async def handle_agent_error(
     request: Request, 
@@ -63,3 +68,4 @@ async def handle_validation_error(request: Request, exc: RequestValidationError)
         status_code=422,
         content={"code": "validation_failed", "message": f"입력값을 확인하세요 — {fields}", "detail": None},
     )
+

@@ -27,3 +27,12 @@ class AnswerOut(BaseModel):
     sources: list[AnswerSource] = Field(description="답변이 인용한 근거 목록")
     enough_evidence: bool = Field(description="근거가 충분했는가. 부족하면 False")
 
+
+# 재시도/폴백 관련 정보 추가 : 라우터가 사용자에게 돌려주는 최종 응답 객체 
+class AskOut(AnswerOut):
+    run_id: str = Field(description="이 질문 한 건의 실행 번호.예: RUN-1234")
+    attempts: int = Field(default=1, description="스키마 검증에 성공하기까지 부른 횟수")
+    fallback_used: bool = Field(
+        default=False, 
+        description="세 번 모두 실패해 폴백 답변으로 대처한 여부"
+    )
