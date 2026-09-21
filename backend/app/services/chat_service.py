@@ -7,7 +7,7 @@ from pydantic import ValidationError
 from app.core.guards import check_question
 from app.core.logging import get_logger
 from app.core.config import get_settings
-from app. core.exceptions import NotFound
+from app.core.exceptions import NotFound
 from app.db.session import session_scope
 from app.models import Run
 from app.services.ids import next_run_id
@@ -59,6 +59,7 @@ def ask(*, question: str, run_id: str | None = None, user_id: int = 1) -> AskOut
     # day15 추가 
     from app.integrations.langfuse_client import score, trace
     from app.integrations.llm_claude import _extract_json 
+    import time
 
     started = time.perf_counter() # 시작시간 
 
@@ -115,7 +116,7 @@ def ask(*, question: str, run_id: str | None = None, user_id: int = 1) -> AskOut
             run.answer = out.answer
             run.status = "완료"
             run.latency_ms = int((time.perf_counter() - started) * 1000)
-            run.sources = [s.model_dump() for s in out.sources]
+            run.source = [s.model_dump() for s in out.source]
 
         return out 
 
@@ -134,6 +135,6 @@ def get_run(*, run_id: str) -> dict:
             "status": run.status,
             "latency_ms":  run.latency_ms, 
             "mode": run.mode,
-            "sources": run.sources or [], 
+            "source": run.source or [], 
             "created_at": run.created_at.isoformat(),
         }
