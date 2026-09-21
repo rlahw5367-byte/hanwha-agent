@@ -3,6 +3,7 @@
 from app.models.base import Base, TimestampMixin
 from app.models.document import Document, DocumentVersion
 from app.models.org import CLEARANCE, Department, User
+from app. models.run import Run, RunStep
 
 __all__ = [
     "Base",
@@ -11,5 +12,7 @@ __all__ = [
     "User",
     "Document",
     "DocumentVersion",
+    "Run",
+    "RunStep"
     "CLEARANCE",
 ]
