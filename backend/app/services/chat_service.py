@@ -1,17 +1,16 @@
 from __future__ import annotations
-
+import time 
 import app.integrations.factory as factory 
-
 from pydantic import ValidationError
-
 from app.core.guards import check_question
 from app.core.logging import get_logger
 from app.core.config import get_settings
 from app.core.exceptions import NotFound
 from app.db.session import session_scope
-from app.models import Run
+from app.models import Run, UsageLog
 from app.services.ids import next_run_id
 from app.schemas.chat import AnswerOut, AskOut
+
 
 log = get_logger(__name__)
 
@@ -48,6 +47,26 @@ def _fallback(run_id: str, attemps: int) -> AskOut:
         fallback_used=True
     )
 
+# 호출 한번의 사용량과 원가를 usage_logs에 남기는 함수 
+def _record_usage(run_id: str, result) -> None:
+    # run_id : 실행 고유번호 
+    # result : 어댑터가 돌려준 LLMResult 타입 응답데이터 
+    try:
+        with session_scope() as session:
+            session.add(
+                UsageLog(
+                    run_id=run_id, 
+                    model=result.model, 
+                    input_tok=result.input_tok, 
+                    cache_tok=result.cache_tok, 
+                    output_tok=result.output_tok, 
+                    cost_krw=result.cost_krw
+                )
+            )
+    except Exception as e:
+        log.warning("사용 기록 실패(무시하고 계속): %s", e)
+
+
 # 본체 : 질문 하나에 대답하기 
 def ask(*, question: str, run_id: str | None = None, user_id: int = 1) -> AskOut:
     #1. 가드 호출 -> 여기서 던져진 예외는 이 함수를 통과해 전역 핸들러까지 올라간다. 
@@ -59,10 +78,10 @@ def ask(*, question: str, run_id: str | None = None, user_id: int = 1) -> AskOut
     # day15 추가 
     from app.integrations.langfuse_client import score, trace
     from app.integrations.llm_claude import _extract_json 
-    import time
 
     started = time.perf_counter() # 시작시간 
 
+    # 질문 정보 DB Run에 저장 
     with session_scope() as session:
         if run_id is None:
             run_id = next_run_id(session) # run_id 없으면 생성 
@@ -76,6 +95,7 @@ def ask(*, question: str, run_id: str | None = None, user_id: int = 1) -> AskOut
             )
         )
 
+    # langfuse 감싸서 llm 요청 
     with trace(
         "ask", 
         run_id=run_id,
@@ -90,6 +110,9 @@ def ask(*, question: str, run_id: str | None = None, user_id: int = 1) -> AskOut
             prompt = q if not hint else f"{q}\n\n[직전 응답의 문제] {hint}\n출력 형식을 지켜 다시 답해 주세요."
             #   llm에 질문 던지기 
             result = llm.answer(question=prompt, contexts=NO_CONTEXTS, user=DEFAULT_USER)
+
+            # 검증 전에 usage_log 기록 하기 
+            _record_usage(run_id, result)
 
             try:
                 data = _extract_json(result.text)
@@ -116,7 +139,7 @@ def ask(*, question: str, run_id: str | None = None, user_id: int = 1) -> AskOut
             run.answer = out.answer
             run.status = "완료"
             run.latency_ms = int((time.perf_counter() - started) * 1000)
-            run.source = [s.model_dump() for s in out.source]
+            run.sources = [s.model_dump() for s in out.sources]
 
         return out 
 
@@ -135,6 +158,12 @@ def get_run(*, run_id: str) -> dict:
             "status": run.status,
             "latency_ms":  run.latency_ms, 
             "mode": run.mode,
-            "source": run.source or [], 
+            "sources": run.sources or [], 
             "created_at": run.created_at.isoformat(),
         }
+
+
+
+
+
+
