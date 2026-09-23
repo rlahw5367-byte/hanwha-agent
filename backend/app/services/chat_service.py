@@ -10,6 +10,7 @@ from app.db.session import session_scope
 from app.models import Run, UsageLog
 from app.services.ids import next_run_id
 from app.schemas.chat import AnswerOut, AskOut
+from app.agent.chain import build_result_chain
 
 
 log = get_logger(__name__)
@@ -75,6 +76,11 @@ def ask(*, question: str, run_id: str | None = None, user_id: int = 1) -> AskOut
     # 2. 어댑터 한 개. 
     llm = factory.get_llm() 
 
+    # 체인 생성
+    chain = build_result_chain(llm, contexts=NO_CONTEXTS, user=DEFAULT_USER).with_retry(
+        stop_after_attempt=2
+    )
+
     # day15 추가 
     from app.integrations.langfuse_client import score, trace
     from app.integrations.llm_claude import _extract_json 
@@ -109,7 +115,7 @@ def ask(*, question: str, run_id: str | None = None, user_id: int = 1) -> AskOut
             #   프롬프트 준비 
             prompt = q if not hint else f"{q}\n\n[직전 응답의 문제] {hint}\n출력 형식을 지켜 다시 답해 주세요."
             #   llm에 질문 던지기 
-            result = llm.answer(question=prompt, contexts=NO_CONTEXTS, user=DEFAULT_USER)
+            result = chain.invoke({"question": prompt})
 
             # 검증 전에 usage_log 기록 하기 
             _record_usage(run_id, result)
