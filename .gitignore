@@ -1,5 +1,4 @@
 # github에 올리지 않을 목록 작성
-sandbox/
 .venv*/
 
 __pycache__/

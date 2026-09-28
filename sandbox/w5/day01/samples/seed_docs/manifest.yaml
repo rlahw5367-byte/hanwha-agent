@@ -1,0 +1,65 @@
+# 시드 문서 목록 — scripts/ingest_seed.py 가 읽는다
+# format 이 hwpx 인 문서가 한글에서 열리지 않으면
+# file 을 fallback(.docx) 값으로 바꾸면 된다.
+
+documents:
+  - doc_id: DOC-HR-014
+    version: v2.0
+    title: 국내출장 여비 규정
+    format: hwpx
+    file: DOC-HR-014_국내출장_여비_규정_v2.0.hwpx
+    fallback: DOC-HR-014_국내출장_여비_규정_v2.0.docx
+  - doc_id: DOC-HR-014
+    version: v1.1
+    title: 국내출장 여비 규정
+    format: hwpx
+    file: DOC-HR-014_국내출장_여비_규정_v1.1.hwpx
+    fallback: DOC-HR-014_국내출장_여비_규정_v1.1.docx
+  - doc_id: DOC-HR-014
+    version: v1.0
+    title: 국내출장 여비 규정
+    format: docx
+    file: DOC-HR-014_국내출장_여비_규정_v1.0.docx
+    fallback: DOC-HR-014_국내출장_여비_규정_v1.0.docx
+  - doc_id: DOC-HR-002
+    version: v3.1
+    title: 복무 규정
+    format: pdf
+    file: DOC-HR-002_복무_규정_v3.1.pdf
+    fallback: DOC-HR-002_복무_규정_v3.1.docx
+  - doc_id: DOC-HR-021
+    version: v1.2
+    title: 재택근무 운영 지침
+    format: docx
+    file: DOC-HR-021_재택근무_운영_지침_v1.2.docx
+    fallback: DOC-HR-021_재택근무_운영_지침_v1.2.docx
+  - doc_id: DOC-PU-007
+    version: v4.0
+    title: 구매·계약 규정
+    format: hwpx
+    file: DOC-PU-007_구매·계약_규정_v4.0.hwpx
+    fallback: DOC-PU-007_구매·계약_규정_v4.0.docx
+  - doc_id: DOC-SE-003
+    version: v2.2
+    title: 정보보안 지침
+    format: pdf
+    file: DOC-SE-003_정보보안_지침_v2.2.pdf
+    fallback: DOC-SE-003_정보보안_지침_v2.2.docx
+  - doc_id: DOC-SE-011
+    version: v1.0
+    title: 장비 반출입 절차
+    format: docx
+    file: DOC-SE-011_장비_반출입_절차_v1.0.docx
+    fallback: DOC-SE-011_장비_반출입_절차_v1.0.docx
+  - doc_id: DOC-PM-005
+    version: v2.0
+    title: 프로젝트 관리 지침
+    format: pdf
+    file: DOC-PM-005_프로젝트_관리_지침_v2.0.pdf
+    fallback: DOC-PM-005_프로젝트_관리_지침_v2.0.docx
+  - doc_id: DOC-FI-009
+    version: v1.4
+    title: 법인카드 사용 지침
+    format: docx
+    file: DOC-FI-009_법인카드_사용_지침_v1.4.docx
+    fallback: DOC-FI-009_법인카드_사용_지침_v1.4.docx
