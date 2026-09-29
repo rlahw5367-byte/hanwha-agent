@@ -44,3 +44,32 @@ def test_parse_pdf_returns_no_blocks_for_scanned_file() -> None:
     assert doc.page_count == 1
     assert doc.table_count == 0 
 
+
+
+from app.core.exceptions import ValidationFailed
+from app.rag.local_parsers import parse_local
+
+HWPX = SAMPLES / 'DOC-HR-014_국내출장_여비_규정_v2.0.hwpx'
+
+def test_parse_local_reads_hwpx_same_as_docx() -> None:
+    _require(HWPX)
+    _require(DOCX)
+    hwpx_doc = parse_local(HWPX)
+    docx_doc = parse_local(DOCX)
+    assert hwpx_doc is not None and docx_doc is not None
+    assert len(hwpx_doc.blocks) == 233
+    assert hwpx_doc.table_count == 7
+    assert hwpx_doc.page_count == 1
+    assert (len(hwpx_doc.blocks), hwpx_doc.table_count, hwpx_doc.page_count) == (len(docx_doc.blocks), docx_doc.table_count, docx_doc.page_count)
+
+def test_parse_local_blocks_unreadable_format_with_hint(tmp_path: Path) -> None:
+    hwp = tmp_path / '출장규정_구버전.hwp'
+    hwp.write_bytes(b'')
+    with pytest.raises(ValidationFailed) as caught:
+        parse_local(hwp)
+    assert 'HWPX' in caught.value.detail
+    
+def test_parse_local_blocks_document_without_text() -> None:
+    _require(SCANNED)
+    with pytest.raises(ValidationFailed):
+        parse_local(SCANNED)
