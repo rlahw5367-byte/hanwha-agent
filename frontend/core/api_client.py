@@ -95,3 +95,9 @@ def stats(*, emp_no: str | None = None) -> dict:
         "expired": sum(1 for row in rows if row["status"] == "만료"),
         "reindexing" : sum(1 for row in rows if row["index_status"] == "재임베딩 ")
     }
+
+
+# 질문 하나 백엔드에 보내면 답변을 받아오는 함수
+def ask(question: str) -> dict:
+    # question: 사용자가 입력창에 입력한 질문
+    return _request("POST", "/api/v1/chat/messages", json={"question": question})
