@@ -33,4 +33,4 @@ def render() -> None:
             answer = response.get('answer', '')
             st.markdown(answer)
         # 대화 내역에 답변 추가
-        st.session_state['chat'].append({'rolr': 'assistant', 'content': answer})
+        st.session_state['chat'].append({'role': 'assistant', 'content': answer})
