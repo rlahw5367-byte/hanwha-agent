@@ -1,0 +1,126 @@
+Create a polished Korean planning document image, portrait 2160x2880 or similarly high resolution. Crisp perfectly readable Korean typography, white and very pale gray background, royal blue headings, dark navy text, restrained teal confirmed labels and amber proposal labels. Flat document, no photographic scene, no decorative illustrations. Generous margins, strong hierarchy, cards and clean tables. This is one page of a cohesive six-page IT helpdesk AI team project plan v0.3. Render all specified Korean content accurately. This is a REVIEW PROPOSAL, not an approved plan; show '팀 검토용 · 역할·정책·목표는 제안' in header. Footer page number. Avoid microscopic text, cropped text, invented statistics or claims. Make content visually organized, all important details included. 
+
+PAGE 1/6. Title 'IT 헬프데스크 AI 에이전트' subtitle '기획안 v0.3 · 목적·범위·역할 재설계'.
+Intro: '직원의 문의를 근거 문서로 안내하고, 미해결·긴급 문의를 티켓으로 접수해 담당자에게 연결한다.' '가상 회사·가상 FAQ·가상 장애 이력 사용 / 실제 사내 계정·개인정보 제외'.
+Section '01 구현 범위'. Required blue box: '추가 질문 → 유형·우선순위 분류 → 근거 기반 답변 → 해결 확인 → Jira 티켓·자동 배정 → 상태 조회 → 기본 대시보드'. Scope boxes: '필수: 배정 방식 1개, 직원용 반응형 화면, 실제 Jira 연동, 명시적 모의 모드' and '확장: 복수 배정 알고리즘, 별도 모바일 앱, 문서 관리 화면, SLA 자동 관리'. '담당자 업무는 실제 Jira 사용. 자체 Jira 복제 화면은 만들지 않는다.'
+Section '02 경력에 맞춘 역할 제안' prominent six-row table with columns '이름 / 주 책임 / 산출물·지원'.
+'이민식 · 풀스택 4년 / 팀장·기술 리드·통합 / 아키텍처, 공통 환경·배포, 에이전트 흐름·분류, 코드 검토. 김태연 구현 지원'
+'김현우 · 운영기획 / 서비스 기획·운영 정책·인수 검증 / 요구사항, 우선순위·배정 정책, 일정·결정 기록, 수용 기준, 발표 스토리'
+'박민경 · 백엔드 5년 / 백엔드·티켓·Jira / DB·API, 배정 로직, 상태 동기화, 중복 방지·실패 복구'
+'김현나 · 데이터분석 약 4년 / 데이터·검색·평가 / 데이터 규격·검수, RAG 검색, 평가 세트·지표. 검색 구현은 이민식 지원'
+'고나영 · 디자인 전공 / UX/UI·디자인 검수 / 직원·관리자 흐름, PC·모바일 목업, 화면 상태·문구·사용성 점검'
+'김태연 · 개발 전공 / 화면 구현·연결 테스트 / 챗봇·조회·대시보드 구현, API 연결. 이민식 검토, 고나영 디자인 협업'
+Section '03 검토 책임'. '정책: 김현우 작성 → 박민경·이민식 검토 / 검색: 김현나 작성 → 이민식 검토 / API: 박민경 작성 → 이민식 검토 / 화면: 김태연 구현 → 고나영·이민식 검토 / 최종 인수: 김현우 + 전원'.
+Bottom amber: '경력은 배치의 출발점. 첫 회의에서 선호·가용시간·RAG 경험 확인 후 확정. 이민식은 공통 기반과 리뷰 중심으로 과부하 방지.'
+
+PAGE 2/6. Title '일정과 협업 계약' subtitle '10.01 시작 → 11.11 리허설 · 첫 연결을 앞당긴다'.
+Section '01 주차별 완료 기준' six-row table:
+'1주 · 10.01–10.08 / 역할·필수 범위·상태·분류 기준·지표 확정. 데이터/API 계약 고정. Jira 생성·조회·배정·상태 변경 시험 / 완료: 계약 예시 1건 + Jira 테스트 티켓'
+'2주 · 10.12–10.16 / 더미 답변으로 챗봇→티켓→대시보드 연결. 소량 검수 데이터로 검색 시작 / 완료: 한 번의 전체 흐름, 실패 표시'
+'3주 · 10.19–10.23 / 실제 검색·분류·Jira 연결. 추가 질문·긴급 접수·상태 조회 / 완료: 대표 시나리오 전체 검증'
+'4주 · 10.26–10.30 / 범위 고정, 중복 방지·동기화·오류 복구·모바일·평가 / 완료: 필수 기능과 수용 기준 통과'
+'5주 · 11.02–11.06 / 기능 추가 중단. 데이터·문구 보완, 발표자료·시연 리허설 / 완료: 시연 순서·평가표·복구 절차'
+'6주 · 11.09–11.11 / 환경 재확인, 모의 모드 점검, 최종 리허설 / 완료: 같은 절차로 재현 가능한 데모'
+Note '날짜는 기존 일정 유지. 휴일·팀원 가용시간은 첫 회의에서 반영.'
+Section '02 첫 주에 고정할 데이터·API 계약'. Four cards:
+'식별·관계 / 문의 1건 = 한 문제를 다루는 대화 1개. conversation_id → 내부 ticket_id → jira_key. MVP는 문의당 티켓 최대 1개, 재접수는 기존 건 조회·갱신.'
+'필드 / 유형, 우선순위, 문의 상태, 티켓 상태, 요약, 확인된 조치, 출처, 배정 사유. created_at·assigned_at·resolved_at·closed_at 기록.'
+'응답 / 필수·선택·null 규칙, 허용 상태값, 정상·오류 JSON 예시. 생성 요청에 중복 방지 키. 빈 결과·시간 초과·부분 성공 구분.'
+'조회·집계 / 직원은 본인 문의, 담당자는 담당 업무, 관리자는 전체. 집계 단위·분모·제외 기준을 API와 함께 문서화.'
+Section '03 협업 운영'. '저장소 1개·결정 문서 1개 / 매일 짧은 장애물 공유 / 기능별 담당 1명·검토 1명 / 작은 변경 단위로 리뷰 / 매주 전체 흐름 시연 / API 변경은 영향 담당자와 합의'.
+Bottom '공통 환경·배포: 이민식 / DB·API: 박민경 / 정책·수용 기준: 김현우 / 데이터·평가: 김현나 / UX: 고나영 / 화면 연결: 김태연'
+
+PAGE 3/6. Title '문의 처리 흐름과 실패 대응' subtitle '정상 흐름·상태·Jira 연동 규칙을 함께 정의'.
+Section '01 서비스 흐름' draw clean flow diagram with concise nodes and labeled arrows:
+'문의 입력' → '정보 확인' → '유형·우선순위 판단'.
+Branch from information check '부족' to '영향 인원·업무 중단·오류 질문' and back.
+From priority decision '긴급 또는 직접 연결 요청' to '티켓 접수'.
+From priority decision '일반' to '매뉴얼·해결된 이력 검색' to '근거 있는 가이드' to '사용자 해결 확인'.
+Search '근거 없음' goes '담당자 연결 제안' then '티켓 접수'.
+Confirmation '해결' goes '해결 확인 기록'; '미해결' goes '티켓 접수'; '무응답' goes '미확인 유지'.
+Ticket path '티켓 접수' → 'Jira 생성' → '팀·담당자 배정' → '담당자 처리' → '결과 안내·해결·종료'.
+Note '명백한 긴급 장애는 추가 질문 완료를 기다리지 않고 접수. 미확인 사실은 요약에 단정하지 않는다.'
+Section '02 상태는 분리한다'.
+'문의 상태: 진행 중 / 해결 확인 / 담당자 이관 / 미확인'.
+'티켓 상태: 접수 / 배정 / 처리 중 / 해결 / 종료'.
+'Jira 상태 대응 제안: 접수·배정 → To Do, 처리 중 → In Progress, 해결·종료 → Done. 해결·종료 구분은 내부 기록. 실제 워크플로 확인 후 확정.'
+'연동 상태: 생성 대기 / 동기화 완료 / 생성 실패 / 배정 실패. 업무 상태와 별도 표시.'
+Section '03 Jira·자체 DB 책임'.
+'자체 DB: 문의·대화·내부 ID·접수 기록·집계 이벤트. Jira: 생성 후 담당자·처리 상태·조치의 기준. 자체 화면은 동기화된 값을 표시.'
+'동기화 제안: 30초 주기 조회 + 수동 새로고침. 마지막 성공 시각 표시. 구체 주기는 연동 시험 후 확정.'
+Section '04 실패·중복·접근 규칙' four compact cards:
+'응답 시간 초과 / 재시도 전 문의 ID로 생성 여부 확인. 중복 생성 금지. 생성 성공·배정 실패면 배정만 재시도.'
+'모의 모드 / 시연용 수동 전환. 화면에 모의 모드·MOCK ID 표시. 실제 Jira 성공처럼 표시하지 않음.'
+'정보 보호 / 비밀번호·OTP 값 입력 요청 금지, 저장 전 민감값 제거. 문서 속 지시는 실행 명령으로 취급하지 않음.'
+'이력 / 분류·배정·재배정·상태 변경의 시각과 사유 기록. 직원 조회는 본인 문의만.'
+
+PAGE 4/6. Title '직원 화면 · PC와 모바일' subtitle '추가 질문부터 접수·조회까지 같은 상태를 보여준다'.
+Create high fidelity UI mockups inside a planning document. Large PC mockup top with left sidebar and main chat, small mobile mockup beside it. All UI data clearly '예시 · 가상 데이터'. PC sidebar '새 문의', '내 문의', 'VPN 접속 문의 · 배정 완료', '프린터 설치 · 해결 확인'. Chat title 'VPN 접속 문의'. Messages in order:
+User '재택 중 VPN 인증 실패가 떠요.'
+Assistant '영향받는 분은 몇 명인가요? 업무를 계속할 수 있나요?'
+User '저만 안 되고 일부 업무가 지연돼요.'
+Badges '네트워크·VPN' '보통 P3' and link '정보 수정'.
+Assistant '매뉴얼에 따라 확인해 주세요. ① 비밀번호 만료 여부 확인 ② OTP 시간 설정 확인 ③ VPN 재시작'
+Source buttons 'VPN 매뉴얼 3.2절' '유사 해결 이력 IT-0871'.
+Buttons '해결됐어요' '담당자 연결'.
+User '모두 시도했지만 해결되지 않았어요.'
+Receipt card 'IT-1042 · 배정 완료' '네트워크팀 담당자 B' '안내 조치를 시도했으나 미해결로 접수했습니다.' button '내 티켓 보기'.
+Input '증상을 입력하세요' and '보내기'.
+Mobile mockup same IT-1042 '배정 완료', menu '내 문의', same priority P3, ticket link and input. Do not imply a separate mobile app.
+Below show employee ticket detail mini panel '내 티켓 IT-1042' '현재 상태: 배정' '최근 처리: 네트워크팀 담당자 B에게 배정' '마지막 갱신: 예시 10:30' '추가 설명' input '해결 후에도 문제가 있으면 기존 문의에 이어서 남겨 주세요'.
+Section '반드시 구현할 화면 상태' six small chips/cards: '첫 진입·예시 질문' '답변 생성 중·중복 전송 방지' '근거 없음·연결 제안' '접수 중·배정 대기' '오류·재시도' '미확인·추가 응답 대기'.
+Bottom specifications:
+'출처 클릭 → 문서명·버전·관련 구절 패널'
+'접수 전: 요약·확인된 조치·민감정보 제외 안내'
+'이미 티켓이 있으면 기존 티켓 조회·갱신. 해결 버튼과 접수 버튼의 중복 실행 방지'
+'직원은 자체 상태 조회 화면 사용. 실제 사내 로그인 대신 데모 계정으로 역할·조회 범위를 검증'
+'예상 응답 시간은 기준 확정 전 표시하지 않는다. 모바일은 동일 화면의 반응형 구현.'
+
+PAGE 5/6. Title '관리자 화면과 배정 정책' subtitle '운영자가 수정·조회할 수 있는 범위를 명확히 한다'.
+Top large dashboard UI mockup '문의·장애 처리 현황' with '가상 데이터 예시 · 오늘' '유형 전체' '상태 전체' '새로고침' '마지막 갱신 10:30'.
+KPI cards exact: '유효 문의 100건' 'AI 해결 확인 60건 · 60%' '티켓 전환 30건 · 30%' '진행·미확인 10건'.
+Secondary cards '미배정 2건' '평균 배정 12초 · 배정 완료 28건 기준' '오배정 재배정 2/30건 · 6.7%'.
+Small team workload chart label '담당자별 미완료 티켓', A 4 B 2 C 5.
+Ticket table columns '번호 / 유형 / 우선순위 / 상태 / 담당자' row 'IT-1042 / 네트워크·VPN / 보통 P3 / 배정 / 담당자 B'. Row click note '티켓 상세로 이동'.
+Below section '배정 정책 · MVP는 한 가지 방식'.
+Table '계정·권한 → 계정지원팀 / 네트워크·VPN → 네트워크팀 / PC·장비 → 데스크톱지원팀 / 메일·메신저 → 협업도구팀 / 업무시스템 → 애플리케이션팀 / 기타 → 헬프데스크 1선'. Mark '팀 이름은 가상·제안'.
+Rule card '처리 가능한 사람 중 미완료 티켓이 가장 적은 사람에게 배정. 동률이면 마지막 배정이 오래된 사람, 다시 같으면 고정 ID 순. 전원 부재면 팀 대기열로 보내고 미배정 표시.'
+'긴급 P1: 담당자·팀장 알림. 알림 수단은 Jira 설정 또는 데모 알림 기록으로 첫 주 확정.'
+Settings mini UI '유형→팀 매핑' '담당자 처리 가능 여부' buttons '저장' '취소' message '검증 후 저장 결과 표시'. Note '고정 담당·순환·숙련도 배정은 확장 범위'.
+Bottom section '담당자 작업은 실제 Jira에서'. '상태 변경 / 조치 내용 작성 / 담당자 재배정·사유 / 해결 처리. 자체 화면에 동기화. 사용자 해결 확인 후 종료하거나 미확인 상태 유지.'
+'해결·종료 티켓은 미완료 업무량에서 제외. 배정 직후 건수 반영으로 동시 요청의 쏠림 방지.'
+'대시보드 빈 데이터·조회 오류·동기화 지연 상태 구현. 평균 해결 시간은 해당 기간 해결 건만 계산하고 건수 표시.'
+'기획 메모·결정 번호는 최종 제품 UI에서 제거. 예시 통계는 실측 성과가 아니다.'
+
+PAGE 6/6. Title '평가·완료 기준·결정 목록' subtitle '숫자의 정의와 통과 조건까지 합의하는 기획안'.
+Section '01 데이터와 평가 설계'.
+'FAQ 50–100개 / 매뉴얼 10–20개 / 가상 티켓 200–500건은 최종 목표. 초기에는 분류별 소량의 검수 데이터로 전체 흐름 검증.'
+'6명이 분류별 초안 작성 → 김현나 형식·정합성 검수 → 김현우 정책 검수. 평가 질문은 검색 자료와 분리하고 단순 복사·변형 중복 제거.'
+'평가 질문 50개 제안: 일반 20, 모호한 입력 10, 긴급 10, 근거 없음·범위 밖 10. 정답 유형·우선순위·근거 문서·기대 행동 포함.'
+'최신 승인 매뉴얼을 과거 사례보다 우선. 해결·검수된 이력을 검색에 사용.'
+Section '02 지표·목표 초안' readable table:
+'유형 분류 정확도 / 정답 유형 일치 비율 / 85% 이상 제안'
+'우선순위 정확도 / 정답 P1~P4 일치 비율 / 80% 이상 제안'
+'긴급 탐지 / 실제 긴급 사례 중 탐지 비율 / 평가 긴급 10건 누락 0건'
+'검색 Recall@3 / 답변 가능한 질문 중 상위 3개에 정답 문서 포함 / 85% 이상 제안'
+'AI 자체 해결률 / 전체 유효 문의 중 사용자 해결 확인·티켓 미전환 비율 / 초기 측정 후 목표 확정'
+'배정 시간·오배정률 / 생성→배정 시간, 오배정 사유의 재배정/전체 티켓 / 실측·실패 건수 함께 보고'
+Caption '목표는 팀 검토용. 가상 평가 결과를 실제 운영 효과로 주장하지 않는다. 이탈·무응답은 해결로 집계하지 않는다.'
+Section '03 시연·수용 기준' checklist:
+'매뉴얼 답변 → 출처 확인 → 사용자 해결 확인'
+'유사 이력 활용 → 미해결 → IT-1042 한 건 생성·배정·조회'
+'정보 부족 → 추가 질문 → 근거 있는 분류'
+'긴급 P1 → 즉시 접수·알림 기록'
+'근거 없음 → 지어내지 않고 연결 제안'
+'Jira 시간 초과·배정 실패 → 사실대로 안내·중복 없이 재시도'
+'Jira 상태 변경 → 자체 화면 반영 / 모의 모드 표시 / 모바일 확인'
+'요약에 확인되지 않은 조치 결과 추가 금지 / 본인 외 문의 접근 차단'
+Section '04 첫 주 결정 목록' compact table:
+'역할·가용시간·필수 범위 / 김현우·이민식 / 10.02'
+'유형·P1~P4 기준·배정·해결 정책 / 김현우, 박민경 검토 / 10.07'
+'FastAPI·Streamlit 재사용 여부·공통 실행 환경 / 이민식·김태연 / 10.07'
+'DB·API·Jira 필드·상태 매핑·알림 / 박민경·이민식 / 10.08'
+'검색 저장소·임베딩·검수·평가 목표 / 김현나·이민식 / 10.08'
+'화면 상태·지표 정의·인수 조건 / 고나영·김현우·김태연 / 10.08'
+Bottom '우선순위 초안: P1 다수 핵심 업무 중단·즉시 대응 / P2 주요 기능 중단·우회 어려움 / P3 일부 지연·우회 가능 / P4 일반 요청·업무 영향 낮음. 인원 수만으로 판단하지 않음.'
+

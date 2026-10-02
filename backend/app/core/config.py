@@ -29,6 +29,12 @@ class Settings(BaseSettings):
     langfuse_host: str = "http://localhost:3000"
     langfuse_public_key: str | None = None
     langfuse_secret_key: SecretStr | None = None
+    # --- Upstage 추가 ------------------------------------------------------
+    upstage_api_key: SecretStr | None = None
+    upstage_base_url: str = "https://api.upstage.ai/v1"
+    upstage_parse_model: str = "document-parse"
+    upstage_parse_ocr: str = "auto"  
+
 
     # live 모드인지 확인 -> settings.is_live => True/Fase 
     @property
