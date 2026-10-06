@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from datetime import date
-from sqlalchemy import ForeignKey, String, UniqueConstraint
+from sqlalchemy import ForeignKey, String, UniqueConstraint, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.models.base import Base, TimestampMixin
 
@@ -56,6 +56,7 @@ class DocumentVersion(Base, TimestampMixin):
     indexed_at: Mapped[date | None]
 
     document: Mapped["Document"] = relationship(back_populates="versions")
+    chunks: Mapped[list["Chunk"]] = relationship(back_populates="version", cascade="all, delete-orphan")
 
     
     __table_args__ = (UniqueConstraint("doc_id", "version", name="uq_doc_version"),)
@@ -70,3 +71,17 @@ class DocumentVersion(Base, TimestampMixin):
     @property
     def is_searchable(self) -> bool:
         return self.status == "현행" and self.index_status == "완료"
+
+# 청크 한 조각 저장할 수 있는 모델
+class Chunk(Base):
+    __tablename__ = "chunks"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    version_id: Mapped[int] = mapped_column(ForeignKey("document_versions.id"), index=True)
+    ord: Mapped[int] = mapped_column(default=0)    # 문서 안에서의 순서 
+    kind: Mapped[str] = mapped_column(String(16))  # "조항" | "표"
+    locator: Mapped[str] = mapped_column(String(200)) # "제14조(숙박비) - 별표1" 
+    text: Mapped[str] = mapped_column(Text)        # 내용. 표는 마크다운으로 처리   
+
+    version: Mapped["DocumentVersion"] = relationship(back_populates="chunks")
+

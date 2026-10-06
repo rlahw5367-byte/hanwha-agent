@@ -1,11 +1,11 @@
-from fastapi import APIRouter, Query, File, Form, UploadFile
+from fastapi import APIRouter, Query, File, Form, UploadFile, BackgroundTasks  # 추가 
 from typing import Annotated
 
 import shutil
 from datetime import date
 from pathlib import Path
 
-from app.schemas.document import DocumentOut, DocumentCreateOut
+from app.schemas.document import DocumentOut, DocumentCreateOut, JobOut
 from app.api.v1.deps import SettingsDep, LoggerDep
 from app.core.exceptions import NotFound, ValidationFailed
 from app.services import document_service
@@ -41,7 +41,6 @@ def list_documents(
         limit=limit
     )
 
-
 # 문서 등록 
 @router.post("", response_model=DocumentCreateOut, status_code=201)
 def upload_document(
@@ -52,33 +51,33 @@ def upload_document(
     version: Annotated[str, Form()],
     effective_from: Annotated[date, Form()],
     file: Annotated[UploadFile, File()],
+    background: BackgroundTasks, 
     logger: LoggerDep,
 ) -> dict:
     
     safe_name = Path(file.filename or "").name
     ext = Path(safe_name).suffix.lower()
 
-    # 우리가 지정한 docx/pdf 아니면 파일 업로드 처리 X
-    if ext not in ALLOWED_EXTS:
-        
+    # 우리가 지정한 docx/pdf 아니면 파일 업로드 처리 X 
+    if ext not in ALLOWED_EXTS:      
         raise ValidationFailed(
             f"{ext or '확장자 없는'} 파일은 등록할 수 없습니다. "
             "DOCX 또는 PDF 로 변환해 다시 올려 주세요."
         )
 
-    # 업로드 할 폴더 없으면 만들어라
+    # 업로드할 폴더 없으면 만들어라 
     UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
-    # 경로/파일명.확장자 : 저장할 파일명은 우리가 짓는다
+    # 경로/파일명.확장자 : 저장할 파일명은 우리가 짓는다. 
     dest = UPLOAD_DIR / f"{doc_id}_{version}{ext}"
 
-    # 실제 파일을 조금씩 나눠서 업로드 한다
+    # 실제 파일을 조금씩 나눠서 업로드한다. 
     with dest.open("wb") as out:
-        shutil.copyfileobj(file.file, out)   # 실제 파일을 dest (저장위치+파일명)으로 복사하는 코드
+        shutil.copyfileobj(file.file, out) # 실제 파일을 dest (저장위치+파일명) 으로 복사하는코드 
 
     logger.info("문서 파일 저장: %s (%s)", dest, security_level)
 
-    # DB에 파일 정보 저장하고, 돌려받은 정보(응답데이터) 화면에 돌려주기
-    return document_service.create_document(
+    # DB에 파일정보 저장하고, 돌려받은 정보(응답데이터) 화면에 돌려주기 
+    result = document_service.create_document(
         doc_id=doc_id,
         title=title,
         dept_id=dept_id,
@@ -88,6 +87,17 @@ def upload_document(
         file_path=dest.as_posix(),
         file_format=ext.lstrip("."),
     )
+    # 수정+추가 
+    job_id = document_service.start_ingest_job(doc_id=doc_id, version=version, path=dest.as_posix())
+    background.add_task(document_service.run_ingest_job, job_id)
+
+    return {**result, "job_id": job_id}
+
+
+# 추가 : 업로드 작업 하나의 진행 상태 정보 요청 처리해주는 매핑 
+@router.get("/jobs/{job_id}", response_model=JobOut)
+def read_job(job_id: str) -> dict:
+    return document_service.get_job(job_id) 
 
 
 # 문서 1개 조회  : ...8000/api/v1/documents/문서id값
