@@ -13,6 +13,9 @@ from views import login as login_view
 from views import documents as documents_view 
 from views import chat as chat_view 
 
+from views import chat as chat_view 
+from views import document_upload as document_upload_view   # 추가 
+
 # 페이지 초기 세팅 
 st.set_page_config(
     page_title="사내 업무 에이전트",
@@ -85,6 +88,8 @@ def main() -> None:
         chat_view.render()
     elif page == "documents":
         documents_view.render()
+    elif page == "document_upload":          # 추가 
+        document_upload_view.render()
     else:
         st.info("아직 만들지 않은 화면입니다.")
 
