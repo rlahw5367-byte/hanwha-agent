@@ -2,6 +2,9 @@
 from __future__ import annotations
 from collections.abc import Callable
 from app.integrations.factory import get_embedder
+# 오류로 인해 임의로 추가함
+from pathlib import Path
+from app.core.config import get_settings
 
 # 청크 텍스트 목록을 벡터 목록으로 변환해주는 함수 
 def embed_documents(

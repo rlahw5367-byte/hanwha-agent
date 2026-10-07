@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 from app.core.logging import get_logger
 from app.models.document import Chunk, DocumentVersion
 
+
 log = get_logger(__name__)
 
 # 문서 버전의 청크를 모두 재저장하는 함수 (재 임베딩시에도 사용)
