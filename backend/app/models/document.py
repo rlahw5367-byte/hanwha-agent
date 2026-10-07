@@ -5,6 +5,10 @@ from sqlalchemy import ForeignKey, String, UniqueConstraint, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.models.base import Base, TimestampMixin
 
+# 오류로 인해 임의로 추가함 by. claude _10.07
+from pgvector.sqlalchemy import Vector
+from app.models.base import EMBED_DIM
+
 # 문서 모델
 class Document(Base, TimestampMixin):
     __tablename__ = "documents"
@@ -84,4 +88,6 @@ class Chunk(Base):
     text: Mapped[str] = mapped_column(Text)        # 내용. 표는 마크다운으로 처리   
 
     version: Mapped["DocumentVersion"] = relationship(back_populates="chunks")
+    # 오류로 인해 임의로 추가함 by. claude _10.07
+    embedding: Mapped[list[float] | None] = mapped_column(Vector(EMBED_DIM), nullable=True)
 

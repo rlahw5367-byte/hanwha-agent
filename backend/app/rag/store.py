@@ -5,6 +5,10 @@ from sqlalchemy.orm import Session
 from app.core.logging import get_logger
 from app.models.document import Chunk, DocumentVersion
 
+# 오류로 인해 임의로 추가함 by. claude _10.07
+from sqlalchemy import select
+from app.models.document import Chunk, Document, DocumentVersion
+
 
 log = get_logger(__name__)
 
