@@ -13,7 +13,7 @@ class AgentError(Exception):
 # 요청한 자원이 없음
 class NotFound(AgentError):
     status_code = 404
-    code = "not_found_error"
+    code = "not_found"
 
 # 자원은 있으나, 이 사용자가 접근할 수 없다.
 class PermissionDenied(AgentError):

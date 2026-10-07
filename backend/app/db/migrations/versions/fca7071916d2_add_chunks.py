@@ -1,8 +1,8 @@
 """add chunks
 
-Revision ID: b45aad5545cc
-Revises: e69edb6271b3
-Create Date: 2026-10-06 10:16:15.632309
+Revision ID: fca7071916d2
+Revises: 04005f84fa8e
+Create Date: 2026-10-06 10:16:26.199706
 
 """
 from typing import Sequence, Union
@@ -12,8 +12,8 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = 'b45aad5545cc'
-down_revision: Union[str, Sequence[str], None] = 'e69edb6271b3'
+revision: str = 'fca7071916d2'
+down_revision: Union[str, Sequence[str], None] = '04005f84fa8e'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

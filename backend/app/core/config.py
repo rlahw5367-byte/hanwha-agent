@@ -2,6 +2,8 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import Field, SecretStr
 from functools import lru_cache
 
+
+
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=".env",
@@ -34,6 +36,12 @@ class Settings(BaseSettings):
     upstage_base_url: str = "https://api.upstage.ai/v1"
     upstage_parse_model: str = "document-parse"
     upstage_parse_ocr: str = "auto"  
+
+    # --- Embedding ------------------------------------------------------
+    embed_provider: str = "local"
+    embed_model_dir: str = ""
+    embed_dim: int = Field(default=1024, ge=1)
+    upstage_embed_model: str | None = None
 
 
     # live 모드인지 확인 -> settings.is_live => True/Fase 
