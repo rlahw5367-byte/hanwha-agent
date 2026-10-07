@@ -100,3 +100,48 @@ def _to_doc(p: Path, payload: dict) -> ParsedDoc:
 
     log.info("상용 파싱 완료: %s, 블록 %d, 표 %d", p.name, len(blocks), tables)
     return ParsedDoc(blocks=blocks, page_count=pages, table_count=tables)
+
+
+# -------- 임베딩 추가 ----------------------------------------
+EMBED_TIMEOUT = 60.0 
+EMBED_BATCH = 50 
+
+# 상용 임베딩 어댑터 
+class UpstageEmbedder:
+    name = "upstage"
+
+    def __init__(self) -> None:
+        settings = get_settings() 
+        self.model = settings.upstage_embed_model
+        self.dim: int = settings.embed_dim
+
+    # 문장 목록을 사용 API에 보내 벡터 목록으로 받기 
+    def _embed(self, texts: list[str], kind: str) -> list[list[float]]:
+        import httpx
+        if not self.model:
+            raise ExternalServiceError(
+                "UPSTAGE_EMBED_MODEL이 비어 있습니다.", 
+                detail=".env 에 사용할 모델 이름을 작성해야 상용 임베딩을 부를 수 있습니다."
+            )
+        settings = get_settings() 
+        url = f"{settings.upstage_base_url.rstrip('/')}/embeddings"
+        try:
+            with httpx.Client(timeout=EMBED_TIMEOUT) as client:
+                resp = client.post(url, headers=_headers(), json={"model": self.model, "input": texts})
+                resp.raise_for_status() 
+        except httpx.HTTPError as e:
+            status = getattr(getattr(e, "response", None), "status_code", None)
+            raise ExternalServiceError(f"Upstage 임베딩 실패({kind}): {e}", 
+                                       detail=_explain(status)) from e 
+        rows = sorted(resp.json().get("data", []), key=lambda r: r.get("index", 0))
+        log.info("상용 임베딩 완료 : %s - %s - %d건", self.model, kind, len(rows))
+        return [[float(x) for x in row["embedding"]] for row in rows]
+
+    def embed_documents(self, texts: list[str]) -> list[list[float]]: 
+        out : list[list[float]] = []
+        for i in range(0, len(texts), EMBED_BATCH):
+            out.extend(self._embed(texts[i:i + EMBED_BATCH], "passage"))
+        return out
+
+    def embed_query(self, text: str) -> list[float]:
+        return self._embed([text], "query")[0] 

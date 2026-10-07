@@ -4,11 +4,13 @@ DB 정보가 필요하면 reporitoty 호출
 트랜잭션을 여닫는 자리가 여기다.
 """
 from __future__ import annotations
+
 from datetime import date
-from uuid import uuid4    # 추가
-from app.core.exceptions import NotFound, ValidationFailed
-from app.db.session import session_scope
-from app.models.document import Document, DocumentVersion  # 데이터 넣는 가방
+from uuid import uuid4 
+from app.core.exceptions import NotFound, ValidationFailed 
+from app.db.session import session_scope                            # 세션 DB 접속하기위한 통로 
+from app.models.document import Document, DocumentVersion        # 수정 : 데이터 넣는 가방들 
+from app.repositories import document_repo                          # 리포지토리 DB 접속시 필요 
 from app.repositories import document_repo   # 리포지토리 DB 접속 시 필요
 from app.models.document import Document, DocumentVersion, Chunk   # Chunk 추가 
 
@@ -122,9 +124,10 @@ def create_document(
             "created": created,
         }
 
-# 추가 : 업로드 요청한 파일 하나를 파싱 -> 청킹 -> 저장까지 이어주는 함수 
+# 수정 : 업로드 요청한 파일 하나를 파싱 -> 청킹 -> 저장까지 이어주는 함수 
 def ingest_document(*, doc_id: str, version: str, path: str) -> dict:
-    from app.rag import chunker, parser
+    from app.rag import chunker, parser, embedder, store
+
     with session_scope() as s:
         document = document_repo.get_document(s, doc_id) 
         dv = next((v for v in document.versions if v.version == version), None) if document else None 
@@ -136,17 +139,16 @@ def ingest_document(*, doc_id: str, version: str, path: str) -> dict:
             raise ValidationFailed(f"파일을 읽지 못했습니다: {path}")
 
         drafts = chunker.chunk(parsed)
-        # 기존 버전에 청크들 있는지 확인 -> 있으면 삭제 
-        for old in list(dv.chunks):
-            s.delete(old)   
-        s.flush()   # 삭제 쿼리 DB에 날리기 
-        for i, d in enumerate(drafts):
-            s.add(Chunk(version_id=dv.id, ord=i, kind=d.kind, locator=d.locator, text=d.text))
-        dv.chunk_count = len(drafts)
+
+        vectors = embedder.embed_documents([d.text for d in drafts])
+        store.save_chunks(s, dv, drafts, vectors) 
+
         dv.index_status = "완료"
         dv.index_progress = 100
+        dv.embed_model = embedder.model_label()
         dv.indexed_at = date.today() 
-        return {"chunks": len(drafts), "tables":parsed.table_count, "summary": chunker.summarize(drafts)}  # 수정     
+        return {"chunks": len(drafts), "tables":parsed.table_count,
+                "vectors":len(vectors) ,"summary": chunker.summarize(drafts)}
 
 # 추가 
 # 작업 상태를 담아두는 곳 
@@ -169,23 +171,24 @@ def start_ingest_job(*, doc_id: str, version: str, path: str) -> str:
 def run_ingest_job(job_id: str) -> None:
     job = _JOBS.get(job_id)
     if job is None:
-        return 
+        return
     try:
-        job["status"] = "진행 중"
-        steps = job["steps"]
-        result = ingest_document(doc_id=job["doc_id"], version=job["version"], path=job["path"])
-        for i in range(4):
-            steps[i]["state"] = "ok"
-        steps[1]["time"] = f"표 {result['tables']}개 인식"
-        steps[2]["time"] = f"표 {result['tables']}개"
-        steps[3]["time"] = f"{result['chunks']}청크"
-        job["progress"] = int(4 / len(steps) * 100) 
-        job["chunk_count"] = result["chunks"]
-        job["message"] = result["summary"]
-        job["status"] = "완료"
-    except Exception as e:
-        job["status"] = "실패"
-        job["message"] = str(e) 
+        job['status'] = '진행 중'
+        steps = job['steps']
+        result = ingest_document(doc_id=job['doc_id'], version=job['version'], path=job['path'])
+        for i in range(5):
+            steps[i]['state'] = 'ok'
+        steps[1]['time'] = f"표 {result['tables']}개 인식"
+        steps[2]['time'] = f"표 {result['tables']}개"
+        steps[3]['time'] = f"{result['chunks']}청크"
+        steps[4]['time'] = f"{result['vectors']}벡터"
+        job['progress'] = int(5 / len(steps) * 100)
+        job['chunk_count'] = result['chunks']
+        job['message'] = result['summary']
+        job['status'] = '완료'
+    except Exception as exc:
+        job['status'] = '실패'
+        job['message'] = str(exc)
 
 # 작업 하나의 진행 상태를 리턴해주는 함수 
 def get_job(job_id: str) -> dict:
