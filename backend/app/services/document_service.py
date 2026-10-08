@@ -5,7 +5,7 @@ DB 정보가 필요하면 reporitoty 호출
 """
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, timedelta
 from uuid import uuid4 
 from app.core.exceptions import NotFound, ValidationFailed 
 from app.db.session import session_scope                            # 세션 DB 접속하기위한 통로 

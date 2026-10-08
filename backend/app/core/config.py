@@ -1,7 +1,7 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import Field, SecretStr
 from functools import lru_cache
-
+from app.models.base import EMBED_DIM
 
 
 class Settings(BaseSettings):
@@ -38,11 +38,14 @@ class Settings(BaseSettings):
     upstage_parse_ocr: str = "auto"  
 
     # --- Embedding ------------------------------------------------------
-    embed_provider: str = "local"
-    embed_model_dir: str = ""
-    embed_dim: int = Field(default=1024, ge=1)
+    embed_provider: str = Field(
+        default="local",
+        pattern=r"^(local|upstage)"
+    )
+    embed_model_dir: str = "../models/bge-m3"
+    embed_dim: int = EMBED_DIM
     upstage_embed_model: str | None = None
-    
+
 # 추가 
     # --- 검색 -----------------------------------------------------------
     retrieval_threshold: float = Field(default=0.55, ge=0.0, le=1.0)

@@ -6,7 +6,7 @@ import httpx2
 
 BASE_URL = os.environ.get("API_BASE_URL", "http://127.0.0.1:8000")
 
-TIMEOUT = 10.0
+TIMEOUT = 60.0
 
 # 백엔드 호출 실패시 예외 클래스 
 class ApiError(RuntimeError):

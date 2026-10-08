@@ -5,7 +5,7 @@ from functools import lru_cache
 
 from app.core.config import get_settings
 from app.core.exceptions import ModeNotAvailable
-from app.integrations.ports import LLMPort
+from app.integrations.ports import LLMPort, EmbedderPort
 
 # Claude 어댑터를 하나 만들어 두고, 재사용하기 
 @lru_cache
