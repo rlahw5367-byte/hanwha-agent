@@ -1,97 +1,97 @@
 from __future__ import annotations
 
-import html
-import pathlib
-import sys
+from html import escape
 import streamlit as st
 
-sys.path.insert(0, str(pathlib.Path(__file__).parent))
+from core import api_client, router, session
+from ui.badge import badge_html
+from ui.card import card, page_header
+from ui.chart import timeline
+from ui.status import progress
 
-from core import router, session  
-from ui.theme import inject_css  
-from views import login as login_view  
-from views import documents as documents_view 
-from views import chat as chat_view 
+DEFAULT_DOC = "DOC-HR-014"
 
-from views import chat as chat_view 
-from views import document_upload as document_upload_view   # 추가 
+def render() -> None:
+    doc_id = st.session_state.get("selected_doc", DEFAULT_DOC)
 
-# 페이지 초기 세팅 
-st.set_page_config(
-    page_title="사내 업무 에이전트",
-    layout="wide",
-    initial_sidebar_state="expanded",
-)
-# CSS 적용 
-inject_css()
+    if st.button("← 문서 관리", key="back_docs"):
+        router.go("documents")     
 
-# 메뉴 목록 데이터 
-NAV: list[tuple[str, str | None]] = [
-    ("AI 업무 도우미", "chat"),      
-    ("문서 관리", "documents"),    
-    ("승인함", None),              
-    ("운영 대시보드", None),       
-]
+    try:
+        doc = api_client.get_document(doc_id, emp_no=session.emp_no())
+        versions = api_client.list_versions(doc_id, emp_no=session.emp_no())
+    except api_client.ApiError as exc:
+        st.error(str(exc))
+        return
 
-# 메뉴(사이드바) 그리기 
-def render_sidebar() -> None:
-    st.sidebar.markdown(
-        '<div class="ag-brand"><div class="ag-brand-name">사내 업무 에이전트</div></div>',
-        unsafe_allow_html=True,
+    page_header(
+        doc["title"],
+        crumb=f"문서 관리 › {doc['doc_id']}",
+        subtitle=f"{doc['dept']} · 보안등급 {doc['security_level']} · {doc['file_format'].upper()}",
+        badges=[(f"현행 {doc['version']}", "ok")],
     )
 
-    # 추가 
-    user = session.current_user() # 회원정보 조회, 비로그인시 None
-    # 로그인 했으면 
-    if user is not None:
-        # 사용자 이름과 부서명을 화면에 그리기 
-        st.sidebar.markdown(
-            '<div class="ag-user">'
-            f'<div class="ag-avatar">{html.escape(user["name"][:1])}</div>'
-            '<div>'
-            f'<div class="ag-user-name">{html.escape(user["name"])}</div>'
-            f'<div class="ag-user-role">{html.escape(user["dept"])}</div>'
-            '</div></div>',
-            unsafe_allow_html=True,
-        )
-        # 로그아웃 버튼 부착 : 버튼 누르면 로그아웃 처리 
-        if st.sidebar.button("로그아웃", key="nav_logout"):
-            session.logout()
-            st.rerun()      
+    left, right = st.columns([2.1, 1])
+    with left:
+        _version_timeline(versions)
+    with right:
+        _policy_card()
+        _actions(doc["doc_id"], doc["version"])
 
-    # 메뉴 버튼 그리기 
-    for label, page_key in NAV:
-        if st.sidebar.button(label, key=f"nav_{label}"):
-            if page_key is None:
-                st.sidebar.info("아직 만들지 않은 화면입니다.")
-            else:
-                # 메뉴 누르면 화면 키값을 상태에 추가 -> 화면 이동 처리 
-                st.session_state["page"] = page_key
 
-# 수정 
-def main() -> None:
-    # 상태값 초기화 
-    session.init_state()
 
-    # 로그인 상태 확인 
-    if not session.is_authenticated():  # 비 로그인이면, 
-        login_view.render()  # 로그인 화면 보여주기 
+# 버전 하나를 타임라인 항목 하나로 만들어주는 함수 
+def _version_block(v: dict) -> str: 
+    label = "현행 · 검색 대상" if v["searchable"] else f"{v['status']} · 검색 제외"
+    tone = "ok" if v["searchable"] else "neutral"
+    detail = " · ".join(x for x in [
+        v["period"],
+        v["embed_model"] or "임베딩 모델 미기록",
+        f"임베딩 완료 {v['indexed_at']}" if v["indexed_at"] else "임베딩 이력 없음",
+    ] if x)
+    return (
+        '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">'
+        f'<span style="font-weight:700;font-size:var(--ag-fs-lg)">{escape(v["version"])}</span>'
+        f'{badge_html(label, tone)}'
+        f'<span style="color:var(--ag-muted);font-size:var(--ag-fs-xs)">'
+        f'청크 {v["chunk_count"]} · 검색 반영 {escape(v["index_status"])}</span></div>'
+        f'<div class="ag-src-meta">{escape(detail)}</div>'
+    )
+
+# 문서 버전들 이력을 타임라인으로 그려주는 함수
+def _version_timeline(versions: list[dict]) -> None: 
+    st.subheader("버전 이력")
+    if not versions:
+        st.info("등록된 문서 버전이 없습니다.")
         return 
-
-    # 사이드바 그리기 
-    render_sidebar()
-
-    # 현재 페이지 키 가져오기 
-    page = router.current_page()
-    # 현재 페이지 키값이 documents 
-    if page == "chat":
-        chat_view.render()
-    elif page == "documents":
-        documents_view.render()
-    elif page == "document_upload":          # 추가 
-        document_upload_view.render()
-    else:
-        st.info("아직 만들지 않은 화면입니다.")
-
-
-main()
+    timeline([_version_block(v) for v in versions])
+    st.caption("변경 이력(누가 언제 올렸는가)은 추후 감사 로그에서 전달받을 예정")
+    
+    
+# 검색 정책 카드 그리기 
+def _policy_card() -> None: 
+    st.subheader("검색 정책")
+    rows = [
+        ("현행 버전만 기본 검색", badge_html("ON", "ok")),
+        ("사용자 요청 시 과거 버전 조회", badge_html("ON", "ok")),
+        ("보안등급 필터", badge_html("ON", "ok")),
+        ("유사도 임계값", badge_html("0.55", "neutral")),
+    ]
+    body = "".join(
+        '<div style="display:flex;justify-content:space-between;align-items:center;'
+        'padding:9px 0;border-bottom:1px solid var(--ag-line)">'
+        f'<span style="font-size:var(--ag-fs-sm)">{escape(label)}</span>{chip}</div>'
+        for label, chip in rows
+    )
+    card(body)
+    st.caption("값은 backend/app/rag/policy.py 의 SearchPolicy 가 정합니다.")
+    
+    
+# 작업 버튼 그리기. 
+def _actions(doc_id: str, version: str) -> None: 
+    st.subheader("작업")
+    if st.button("새 버전 업로드", type="primary", use_container_width=True):
+        router.go("document_upload")
+    if st.button("재임베딩", use_container_width=True):
+        st.session_state["toast"] = f"{doc_id} {version} 재임베딩을 예약했습니다"
+        st.rerun() 

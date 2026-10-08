@@ -108,7 +108,7 @@ def render() -> None:
     filters = _filter_row() # 필터 4개 그리기 호출 
 
     if st.button("새 문서 업로드"): # 문서 업로드 버튼 만들기 
-        router.go("document_upload") # 문서 업로드 페이지로 화면 전환     # 수정 
+        router.go("document_upload") # 문서 업로드 페이지로 화면 전환 
 
 
     with st.spinner("문서를 불러오는 중입니다..."):
@@ -128,3 +128,17 @@ def render() -> None:
     st.caption(f"{len(documents)}건") # 문서 건수 출력 
     
     _table(documents) # 테이블에 그리기 호출 
+    _open_detail(documents) # 추가 : 표에서 문서 하나 고르면, 상세 페이지로 넘어가기 
+
+
+# 추가 
+def _open_detail(documents: list[dict]) -> None: 
+    doc_ids = list(dict.fromkeys(document["doc_id"] for document in documents))
+    left, right = st.columns([3, 1])
+    with left: 
+        chosen = st.selectbox("상세페이지를 볼 문서", doc_ids, key="f_detail_doc")
+    with right:
+        st.write("")
+        if st.button("버전 이력 보기", use_container_width=True):
+            st.session_state["selected_doc"] = chosen
+            router.go("document_detail")
