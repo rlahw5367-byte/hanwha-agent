@@ -41,3 +41,16 @@ class JobOut(BaseModel):
     steps: list[dict]
     chunk_count: int = 0
     message: str = "" 
+
+#  버전 목록 화면에 전달할 수 있는 스키마 추가 
+class VersionOut(BaseModel):
+    version: str = Field(examples=["v2.0"])
+    status: Literal["현행", "만료"]
+    effective_from: date
+    expires_at: date | None = None
+    chunk_count: int  = 0 
+    embed_model: str | None = None
+    index_status: Literal["대기", "재임베딩", "완료", "보관"] = "대기"
+    indexed_at: date | None = None
+    searchable: bool = False
+    period: str = Field(examples=["2025-07-01 ~"]) 

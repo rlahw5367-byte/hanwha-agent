@@ -67,7 +67,7 @@ def get_document(*, doc_id: str) -> dict:
             raise NotFound(f"현행 버전이 없습니다: {doc_id}")
         return _to_out(current, document)
 
-# 문서 등록 (저장) 처리
+# 문서 등록(저장) 처리 
 def create_document(
     *,
     doc_id: str,
@@ -80,6 +80,58 @@ def create_document(
     file_format: str,
     owner_id: int | None = None,
 ) -> dict:
+
+    with session_scope() as s:
+        # 문서 조회 
+        document = document_repo.get_document(s, doc_id)
+        created = document is None
+        # 문서 없을 때 
+        if document is None:
+            document = Document(
+                id=doc_id,
+                title=title,
+                dept_id=dept_id,
+                security_level=security_level,
+                owner_id=owner_id,
+            )
+            s.add(document)
+            s.flush()
+        # 문서 버전이 이미 존재할때 
+        elif any(v.version == version for v in document.versions):
+            raise ValidationFailed(
+                f"{doc_id} 의 {version} 은(는) 이미 등록되어 있습니다. "
+                "버전 번호를 올려 다시 올려 주세요."
+            )
+
+        # *추가* : 새 버전 저장 전에, 기존 버전들의 현행을 만료로 내리는 처리 (현행은 하나만)
+        for past in document.versions:
+            if past.status == "현행":
+                past.status = "만료"
+                past.expires_at = effective_from - timedelta(days=1)
+                past.index_status = "보관"  # 검색 대상에서 제외하겠다 
+
+
+        # 실제 문서 버전 저장 
+        document_repo.add_version(
+            s,
+            document,
+            version=version,
+            status="현행",
+            effective_from=effective_from,
+            expires_at=None,
+            file_path=file_path,
+            file_format=file_format,
+            index_status="대기",     
+        )
+        # 저장 후 화면에 전달할 데이터 리턴 
+        return {
+            "doc_id": document.id,
+            "title": document.title,
+            "version": version,
+            "file_format": file_format,
+            "file_path": file_path,
+            "created": created,
+        }
     
     # 문서 없을 때
     with session_scope() as s:
@@ -196,3 +248,38 @@ def get_job(job_id: str) -> dict:
     if job is None:
         raise NotFound(f"작업을 찾을 수 없습니다: {job_id}")
     return job 
+
+
+# 추가 : 문서 한건의 버전을 전부, 최신 버전이 앞에 오도록 리턴 
+def list_versions(*, doc_id: str) -> list[dict]:
+    with session_scope() as s:
+        document = document_repo.get_document(s, doc_id)
+        if document is None:
+            raise NotFound(f"문서를 찾을 수 없습니다: {doc_id}")
+        return [
+            {
+                "version": v.version, 
+                "status" : v.status, 
+                "effective_from": v.effective_from, 
+                "expires_at": v.expires_at,
+                "chunk_count": v.chunk_count, 
+                "embed_model": v.embed_model, 
+                "index_status": v.index_status, 
+                "indexed_at": v.indexed_at, 
+                "searchable": v.is_searchable, 
+                "period": v.period
+            }
+            for v in sorted(document.versions, key=lambda v: v.version, reverse=True)
+        ]
+
+# 이미 등록된 문서 버전 한개를 다시 적재하는 작업 : 재임베딩 
+def start_reindex_job(*, doc_id: str, version: str) -> str:
+    with session_scope() as s:
+        document = document_repo.get_document(s, doc_id)
+        dv = next((v for v in document.versions if v.version == version), None) if document else None
+        if dv is None:
+            raise NotFound(f"해당 문서 버전을 찾을 수 없습니다: {doc_id} {version}")
+        path = dv.file_path or ""
+        dv.index_status = "재임베딩"
+        dv.index_progress = 0 
+    return start_ingest_job(doc_id=doc_id, version=version, path=path)
