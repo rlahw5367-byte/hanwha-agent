@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 from sqlalchemy.orm import Session
-from app.core.logging import get_logger
-from sqlalchemy.orm import Session
-from app.models.document import Chunk, DocumentVersion, Document
+from sqlalchemy import select
 
+from app.core.logging import get_logger
+from app.models.document import Chunk, DocumentVersion, Document
 
 log = get_logger(__name__)
 
