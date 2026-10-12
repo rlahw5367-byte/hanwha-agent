@@ -1,8 +1,6 @@
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse 
-# from app.api.v1.documents import router as documents_router  # 지우기 
-# from app.api.v1.auth import router as auth_router  # 지우기 
-from app.api.v1 import auth, documents, chat # 하나로 통합 
+from app.api.v1 import auth, documents, chat, ops   # 추가 
 from app.core.exceptions import AgentError
 from contextlib import asynccontextmanager
 from app.core.logging import setup_logging
@@ -32,17 +30,21 @@ app.include_router(
     documents.router, 
     prefix="/api/v1"
 )
-
 app.include_router(
     auth.router,
     prefix="/api/v1"
 )
-
 app.include_router(
     chat.router,
     prefix="/api/v1"
 )
+# 추가 
+app.include_router(
+    ops.router,
+    prefix="/api/v1"
+)
 
+## 예외 핸들러
 @app.exception_handler(AgentError)
 async def handle_agent_error(
     request: Request, 
