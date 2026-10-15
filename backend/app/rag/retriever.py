@@ -22,6 +22,8 @@ SYNONYMS = {
     "교통": "교통비 KTX 항공",
     "기준": "규정 상한 지급 기준표",
     "신청서": "신청 양식 서식",
+    "법인카드": "카드 결제 사용",
+    "재택": "재택근무 원격"
 }
 
 # 질문을 여러 각도로 고쳐 작성 -> 목록으로 리턴 
@@ -38,3 +40,45 @@ def expand_queries(question: str, n: int = 3) -> list[str]:
         out.append(core)
 
     return out[:n]
+
+
+# 긴 본문을 화면에 얹을 수 있는 만큼 줄여주는 함수 
+def _shorten(text: str, limit:int = 220) -> str:
+    text = " ".join((text or "").split())
+    return text if len(text) <= limit else text[:limit - 1] + "..."
+
+
+# 검색 결과 한건을 외부로 내보내는 모양으로 변경 
+def source_dict(row: dict) -> dict: 
+    return {**row, "score": round(float(row.get("score", 0.0)), 2), 
+            "quote": _shorten(row.get("text", ""))}
+
+
+# 실제 DB를 확인하는 검색기 
+class LiveRetriever: 
+    name = "live"
+
+    # 질문 하나를 검색 파이프라인에 통과시켜 근거 후보를 리턴해주는 메인 기능 
+    def search(self, *, question: str, user: dict, session: Session) -> RetrievalResult:
+        settings = get_settings()
+        steps: list[dict] = []
+        t0 = time.perf_counter()
+
+        #1. 질의 재작성 
+        queries = expand_queries(question, settings.multi_query_n)
+        steps.append({"name": f"질의 재작성 · Multi-Query {len(queries)}건 생성",
+                      "state": "ok", "time": f"{time.perf_counter() - t0:.1f}s"})
+        #2. 갈래마다 벡터 검색 -> chunk_id로 중복 제거 
+        embedder = get_embedder() 
+        seen: dict[int, dict] = {} 
+        for one in queries:
+            for row in store.vector_search(session, embedder.embed_query(one), limit=settings.retrieval_top_k):
+                seen.setdefault(row["chunk_id"], row)
+        candidates = sorted(seen.values(), key=lambda r: r["score"], reverse=True)
+
+        # 마무리 : 상위 몇 건만 남기고 최고 점수가 임계값을 넘는지 확인 
+        sources = [source_dict(r) for r in candidates[:settings.rerank_top_n]]
+        best = max((s["score"] for s in sources), default=0.0)
+        return RetrievalResult(sources=sources, steps=steps, best_score=best,
+                               passed=best >= settings.retrieval_threshold,
+                               threshold=settings.retrieval_threshold)

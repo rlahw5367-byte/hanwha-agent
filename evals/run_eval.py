@@ -18,6 +18,7 @@ from app.db.session import session_scope
 from app.integrations.factory import get_embedder
 from app.models import EvalRun
 from app.rag import policy, store
+from app.rag.retriever import LiveRetriever  
 
 settings = get_settings() 
 GOLDEN = Path(__file__).parent / "golden_set.yaml"
@@ -25,14 +26,21 @@ REPORTS = Path(__file__).parent / "reports"
 DEFAULT_TOP_N = 3      # 상위 몇 건 안에 들어오면 맞는 것으로 볼 것인가 
 
 # 설정 목록.
-CONFIGS = [{"name": "기본 검색"}]
+CONFIGS = [
+    {"name": "기본 검색"},
+    {"name": "+ Multi-Query", "multi_query": True} 
+]
 
 # 관리자 시각으로 테스트 
 EVAL_USER = {"id": "2011-0003", "name":"한서영", "clearance": "대외비", "dept_id": "HR"}
 
 
 # 질문 하나로 후보를 뽑고 정책으로 거른 뒤, 상위 N건만 남기는 함수 
-def retrieve(session, question: str, top_n: int) -> list[dict]:
+def retrieve(session, question: str, top_n: int, cfg: dict | None = None) -> list[dict]:
+    if (cfg or {}).get("multi_query"): 
+        result = LiveRetriever().search(question=question, user=EVAL_USER, session=session)
+        return result.sources[:top_n] 
+
     embedder = get_embedder()
     rows = store.vector_search(session, embedder.embed_query(question), limit=settings.retrieval_top_k)
     kept, _ = policy.filter_candidates(rows, user=EVAL_USER, question=question)
@@ -67,7 +75,7 @@ def run_config(cfg: dict, items: list[dict], top_n: int) -> dict:
     results = []
     with session_scope() as session:
         for item in items:
-            hits = retrieve(session, item["question"], top_n)
+            hits = retrieve(session, item["question"], top_n, cfg)
             ok, why = judge(item, hits, settings.retrieval_threshold)
             results.append({"id": item["id"], "type": item.get("type",""), 
                             "question": item["question"], "ok": ok, "why": why})
@@ -97,6 +105,7 @@ def save(report: dict) -> Path:
         for i, run in enumerate(report["runs"]):
             session.add(EvalRun(config=run["config"], ord=i, accuracy=run["accuracy"], 
                                 item_count=run["total"], measured_at=datetime.now()))
+    return path 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="골든셋 정확도 측정")
@@ -131,3 +140,9 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+
+
+
+
+
+
