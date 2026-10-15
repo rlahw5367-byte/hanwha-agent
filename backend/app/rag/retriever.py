@@ -54,12 +54,13 @@ def source_dict(row: dict) -> dict:
             "quote": _shorten(row.get("text", ""))}
 
 
+# 수정 
 # 실제 DB를 확인하는 검색기 
 class LiveRetriever: 
     name = "live"
 
     # 질문 하나를 검색 파이프라인에 통과시켜 근거 후보를 리턴해주는 메인 기능 
-    def search(self, *, question: str, user: dict, session: Session) -> RetrievalResult:
+    def search(self, *, question: str, user: dict, session: Session, hybrid: bool = True) -> RetrievalResult:
         settings = get_settings()
         steps: list[dict] = []
         t0 = time.perf_counter()
@@ -70,11 +71,30 @@ class LiveRetriever:
                       "state": "ok", "time": f"{time.perf_counter() - t0:.1f}s"})
         #2. 갈래마다 벡터 검색 -> chunk_id로 중복 제거 
         embedder = get_embedder() 
+        t1 = time.perf_counter()        # 키워드 단계 시작 시간 
         seen: dict[int, dict] = {} 
+        question_vec: list[float] = []  # 원래 질문의 벡터를 담을 칸 
         for one in queries:
-            for row in store.vector_search(session, embedder.embed_query(one), limit=settings.retrieval_top_k):
-                seen.setdefault(row["chunk_id"], row)
-        candidates = sorted(seen.values(), key=lambda r: r["score"], reverse=True)
+            vec = embedder.embed_query(one) 
+            question_vec = question_vec or vec
+            for row in store.vector_search(session, vec, limit=settings.retrieval_top_k):
+                seen.setdefault(row["chunk_id"], row)      
+        vector_rows = sorted(seen.values(), key=lambda r: r["score"], reverse=True)
+        #3. 키워드 검색 -> 원문 하나로 한 번만 돌리기  
+        keyword_rows = store.keyword_search(
+            session, question, limit=settings.retrieval_top_k) if hybrid else [] 
+
+        candidates = store.fuse(vector_rows, keyword_rows) if hybrid else vector_rows
+
+        sims = store.vector_scores(session, question_vec, [c["chunk_id"] for c in candidates])
+        for c in candidates:
+            c["score"] = sims.get(c["chunk_id"], 0.0)
+        steps.append({
+            "name": f"벡터 + 키워드 하이브리드 검색 · 벡터 {len(vector_rows)}건 · "
+            f"키워드 {len(keyword_rows)}건 -> 후보 {len(candidates)}", 
+            "state": "ok" if keyword_rows else "no", 
+            "time": f"{time.perf_counter() - t1:.1f}s"
+        })  
 
         # 마무리 : 상위 몇 건만 남기고 최고 점수가 임계값을 넘는지 확인 
         sources = [source_dict(r) for r in candidates[:settings.rerank_top_n]]

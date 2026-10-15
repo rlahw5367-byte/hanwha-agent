@@ -28,7 +28,8 @@ DEFAULT_TOP_N = 3      # 상위 몇 건 안에 들어오면 맞는 것으로 볼
 # 설정 목록.
 CONFIGS = [
     {"name": "기본 검색"},
-    {"name": "+ Multi-Query", "multi_query": True} 
+    {"name": "+ Multi-Query", "multi_query": True},
+    {"name": "+ 하이브리드", "multi_query": True, "hybrid": True},
 ]
 
 # 관리자 시각으로 테스트 
@@ -38,7 +39,7 @@ EVAL_USER = {"id": "2011-0003", "name":"한서영", "clearance": "대외비", "d
 # 질문 하나로 후보를 뽑고 정책으로 거른 뒤, 상위 N건만 남기는 함수 
 def retrieve(session, question: str, top_n: int, cfg: dict | None = None) -> list[dict]:
     if (cfg or {}).get("multi_query"): 
-        result = LiveRetriever().search(question=question, user=EVAL_USER, session=session)
+        result = LiveRetriever().search(question=question, user=EVAL_USER, session=session, hybrid=bool(cfg.get("hybrid")))
         return result.sources[:top_n] 
 
     embedder = get_embedder()
