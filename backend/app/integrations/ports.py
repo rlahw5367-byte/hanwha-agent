@@ -28,6 +28,16 @@ class ParsedBlock:
     locator: str         # 원본 어디서 나온 덩어리 인지  : p.6, 표2
     text: str            # 덩어리 글자들 
 
+# 추가 : 검색 결과 담는 객체 
+@dataclass
+class RetrievalResult: 
+    sources: list[dict] = field(default_factory=list)  
+    steps: list[dict] = field(default_factory=list)
+    best_score: float = 0.0
+    passed: bool = False
+    version_note: str | None = None
+    threshold: float = 0.55
+
 # 문서 한건을 파싱한 결과 전체 
 @dataclass
 class ParsedDoc: 

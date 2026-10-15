@@ -121,7 +121,7 @@ items:
   - id: G18
     question: 4급 직원의 숙박비 상한은 개정 전에 얼마였나요?
     type: 개정 전후 비교
-    expect_doc: DOC-HR-014
+    expect_doc: DOC-HR-014d
     expect_version: v1.1
     needs_past_version: true
     expect_keywords: ["65,000"]
