@@ -164,15 +164,17 @@ items:
   - id: G23
     question: 협력사 평가는 어떤 기준으로 하나요?
     type: 타 부서 문서 참조
-    expect_doc: DOC-PU-103
-    expect_version: v1.0
+    expect_doc: DOC-PU-007
+    expect_version: v4.0
     requires_clearance: 대외비
+    expect_keywords: ["협력사 평가", "협조도"]
   - id: G24
     question: 접근권한은 누가 승인하나요?
     type: 타 부서 문서 참조
-    expect_doc: DOC-SE-102
-    expect_version: v1.0
-    requires_clearance: 3급
+    expect_doc: DOC-SE-003
+    expect_version: v2.2
+    requires_clearance: 대외비
+    expect_keywords: ["접근권한", "보안팀장이 승인"]
 
   # ── 규정에 없는 사항 (6) — 근거부족 응답이 정답 ──
   - id: G25

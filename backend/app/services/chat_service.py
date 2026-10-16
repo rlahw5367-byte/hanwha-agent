@@ -28,7 +28,7 @@ FALLBACK_ANSWER = "요청을 처리했지만 근거를 확인하지 못했습니
 # 질문자 (임시)
 DEFAULT_USER = {"name": "김민준", "dept": "인프라사업부 2팀"}
 
-# 근거 문서 목록. 
+# 근거 문서 목록!! 
 NO_CONTEXTS: list[dict] = []
 
 # pydantic 의 오류 목록을 모델에게 다시 보낼 한 줄의 문장으로 변경해서 리턴 : 재시도 힌트 
@@ -71,6 +71,15 @@ def _record_usage(run_id: str, result) -> None:
     except Exception as e:
         log.warning("사용 기록 실패(무시하고 계속): %s", e)
 
+# 열어둔 실행 기록 행들을 결과로 체워서 닫기 
+def _close_run(run_id: str, out: AskOut, started: float) -> None:
+    with session_scope() as session: 
+        run = session.get(Run, run_id)
+        run.answer = out.answer
+        run.status = "완료"
+        run.latency_ms = int((time.perf_counter() - started) * 1000)
+        run.sources = [s.model_dump() for s in out.sources]
+
 # 본체 : 질문 하나에 대답하기 
 def ask(*, question: str, run_id: str | None = None, user_id: int = 1) -> AskOut:
     #1. 가드 호출 -> 여기서 던져진 예외는 이 함수를 통과해 전역 핸들러까지 올라간다. 
@@ -102,6 +111,27 @@ def ask(*, question: str, run_id: str | None = None, user_id: int = 1) -> AskOut
                 mode=get_settings().app_mode
             )
         )
+
+    # NO_CONTEXTS 갈아 끼우기 
+    from app.rag.retriever import LiveRetriever
+    with session_scope() as session: 
+        found = LiveRetriever().search(
+            question=q, user={**DEFAULT_USER, "clearance": "일반"}, session=session
+        )
+    log.info("검색 : 근거 %d건 · 최고 %.2f · 기준 %.2f", len(found.sources), found.best_score, found.threshold)
+
+    if not found.passed:
+        log.info("임계값 미달(%.2f < %.2f) - 근거 부족으로 응답합니다. (run_id=%s)", found.best_score, found.threshold, run_id)
+        out = _fallback(run_id, attemps=1)
+        out.steps = found.steps  # 못 넘은 단계까지 화면에 그대로 보여주기 
+        _close_run(run_id, out, started)
+        return out 
+
+    # 체인에 연결
+    chain = build_result_chain(llm, contexts=found.sources, user=DEFAULT_USER).with_retry(
+        stop_after_attempt=2
+    )
+
 
     # langfuse 감싸서 llm 요청 
     with trace(
@@ -142,13 +172,8 @@ def ask(*, question: str, run_id: str | None = None, user_id: int = 1) -> AskOut
             out = _fallback(run_id, MAX_ATTEMPTS)
             score(run_id, "schema_ok", 0.0)
 
-        with session_scope() as session:
-            run = session.get(Run, run_id)  # run_id에 해당하는 레코드 한개 조회 
-            run.answer = out.answer
-            run.status = "완료"
-            run.latency_ms = int((time.perf_counter() - started) * 1000)
-            run.sources = [s.model_dump() for s in out.sources]
-
+        out.steps = found.steps
+        _close_run(run_id, out, started)
         return out 
 
 # 실행 기록 한 건 조회 

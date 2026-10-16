@@ -4,7 +4,8 @@ from __future__ import annotations
 from typing import Literal
 from pydantic import BaseModel, Field
 
-DOC_IDS = Literal["DOC-HR-014", "DOC-PU-007", "DOC-SE-003"] # 임시 
+DOC_IDS = Literal["DOC-HR-014", "DOC-HR-002", "DOC-HR-021", "DOC-FI-009",
+                  "DOC-PU-007", "DOC-SE-003", "DOC-SE-011", "DOC-PM-005"] 
 
 # 사용자가 보내오는 질문 하나 담아주는 객체(모델)
 class ChatRequest(BaseModel):
@@ -16,10 +17,11 @@ class ChatRequest(BaseModel):
 
 # 답변이 인용한 근거 한개 담아줄 객체(모델)
 class AnswerSource(BaseModel):
-    doc_id: DOC_IDS = Field(description="인용한 문서 번호. 등록된 세 건 중 하나") # 임시 
+    doc_id: DOC_IDS = Field(description="인용한 문서 번호. 등록된 여덟 건 중 하나")
     title: str = Field(description="문서 제목")
     version: str = Field(description="문서 버전. 예: v2.0")
     locator: str = Field(description="문서 안 위치. 예: 제12조 - p.6")
+    score: float = Field(default=0.0, description="유사도 점수. 0~1. 높을수록 가깝다") # 추가 
 
 # 모델이 돌려줘야하는 답변의 모양 
 class AnswerOut(BaseModel):
@@ -27,10 +29,10 @@ class AnswerOut(BaseModel):
     sources: list[AnswerSource] = Field(description="답변이 인용한 근거 목록")
     enough_evidence: bool = Field(description="근거가 충분했는가. 부족하면 False")
 
-
 # 재시도/폴백 관련 정보 추가 : 라우터가 사용자에게 돌려주는 최종 응답 객체 
 class AskOut(AnswerOut):
     run_id: str = Field(description="이 질문 한 건의 실행 번호.예: RUN-1234")
+    steps: list[dict] = Field(default_factory=list, description="검색 과정 단계 목록")
     attempts: int = Field(default=1, description="스키마 검증에 성공하기까지 부른 횟수")
     fallback_used: bool = Field(
         default=False, 

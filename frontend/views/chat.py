@@ -2,6 +2,8 @@ from __future__ import annotations
 import streamlit as st
 from core import api_client
 from ui.card import page_header
+from ui.source import sources as source_block
+from ui.status import steps as step_list
 
 def render() -> None:
     page_header('AI 업무 도우미', subtitle="사내 규정을 근거로 답변합니다.")
@@ -32,5 +34,8 @@ def render() -> None:
             # 답변 화면에 뿌리기
             answer = response.get('answer', '')
             st.markdown(answer)
+            
+
+
         # 대화 내역에 답변 추가
         st.session_state['chat'].append({'role': 'assistant', 'content': answer})

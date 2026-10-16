@@ -37,7 +37,7 @@ class LocalCrossEncoder:
 
         try:
             self._model = CrossEncoder(str(folder), max_length=settings.rerank_max_length, 
-                                       activation_fn=torch.nn.Identity)
+                                       activation_fn=torch.nn.Identity())  # 오타 수정 
         except Exception as e:
             raise ExternalServiceError(f"리랭커 모델을 열지 못했습니다: {folder}") from e
         
@@ -48,6 +48,3 @@ class LocalCrossEncoder:
             return []
         raw = self._model.predict([[query, t] for t in texts], show_progress_bar=False)
         return [round(_sigmoid(float(x)), 4) for x in raw]
-
-
-

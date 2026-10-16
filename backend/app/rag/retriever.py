@@ -10,7 +10,8 @@ from app.core.config import get_settings
 from app.core.logging import get_logger
 from app.integrations.factory import get_embedder
 from app.integrations.ports import RetrievalResult
-from app.rag import store
+from app.rag import store, policy
+from app.rag.reranker import judge_gate, rerank
 
 log = get_logger(__name__)
 
@@ -59,7 +60,8 @@ class LiveRetriever:
     name = "live"
 
     # 질문 하나를 검색 파이프라인에 통과시켜 근거 후보를 리턴해주는 메인 기능 
-    def search(self, *, question: str, user: dict, session: Session, hybrid: bool = True) -> RetrievalResult:
+    def search(self, *, question: str, user: dict, session: Session, hybrid: bool = True,
+               rerank_on: bool = True, reranker: str | None = None) -> RetrievalResult:
         settings = get_settings()
         steps: list[dict] = []
         t0 = time.perf_counter()
@@ -95,15 +97,36 @@ class LiveRetriever:
             "time": f"{time.perf_counter() - t1:.1f}s"
         })  
 
-        # 마무리 : 상위 몇 건만 남기고 최고 점수가 임계값을 넘는지 확인 
-        sources = [source_dict(r) for r in candidates[:settings.rerank_top_n]]
-        best = max((s["score"] for s in sources), default=0.0)
+        #4. 정책 필터 
+        t2 = time.perf_counter() 
+        kept, blocked = policy.filter_candidates(candidates, user=user, question=question)
+        if blocked:
+            log.info("정책으로 제외: %s", "/".join(blocked[:5]))
+
+        #5. 리랭킹 
+        top = (rerank(question, kept, top_n=settings.rerank_top_n, by=reranker)
+               if rerank_on else kept[:settings.rerank_top_n])
+        how = {"simple": "(간이)", "cross_encoder": "(크로스 인코더)"}.get(
+            top[0].get("rerank_by", "") if top else "", "")
+        steps.append({
+            "name": f"후보 {len(kept)}건 -> 리랭킹{how} 상위 {len(top)}건", 
+            "state": "ok" if top else "no", 
+            "time": f"{time.perf_counter() - t2:.1f}s"
+        })
+
+        #6. 임계값 검증 
+        sources = [source_dict(r) for r in top]
+        best, threshold, passed = judge_gate(sources)
+        steps.append({
+            "name": f"유사도 임계값 검증 · 기준 {threshold:.2f} / 최고 {best:.2f}", 
+            "state": "ok" if passed else "no"
+        })
+
+
+        # 마무리 : 만료된 버전을 걸러서 답이 줄었다면, 그 사실을 사용자에게 알릴 메세지 한줄 만들기 
+        expired = [b.split(" - ") for b in blocked if "만료" in b]
+        note = (f"{expired[0]}은(는) 만료된 버전이라 검색에서 제외 했습니다. "
+                "과거 문서 버전을 보시려면, 질문에 '개정 전' 처럼 적어 주세요.") if expired else None
+
         return RetrievalResult(sources=sources, steps=steps, best_score=best,
-                               passed=best >= settings.retrieval_threshold,
-                               threshold=settings.retrieval_threshold)
-
-        
-
-
-
-
+                               passed=passed, version_note=note, threshold=threshold)
