@@ -1,7 +1,11 @@
 from __future__ import annotations
+
 import time 
+
 import app.integrations.factory as factory 
+
 from pydantic import ValidationError
+
 from app.core.guards import check_question
 from app.core.logging import get_logger
 from app.core.config import get_settings
@@ -10,7 +14,7 @@ from app.db.session import session_scope
 from app.models import Run, UsageLog
 from app.services.ids import next_run_id
 from app.schemas.chat import AnswerOut, AskOut
-from app.agent.chain import build_result_chain
+from app.agent.chain import build_result_chain 
 
 
 log = get_logger(__name__)
@@ -67,7 +71,6 @@ def _record_usage(run_id: str, result) -> None:
     except Exception as e:
         log.warning("사용 기록 실패(무시하고 계속): %s", e)
 
-
 # 본체 : 질문 하나에 대답하기 
 def ask(*, question: str, run_id: str | None = None, user_id: int = 1) -> AskOut:
     #1. 가드 호출 -> 여기서 던져진 예외는 이 함수를 통과해 전역 핸들러까지 올라간다. 
@@ -76,12 +79,11 @@ def ask(*, question: str, run_id: str | None = None, user_id: int = 1) -> AskOut
     # 2. 어댑터 한 개. 
     llm = factory.get_llm() 
 
-    # 체인 생성
+    # 체인 생성 
     chain = build_result_chain(llm, contexts=NO_CONTEXTS, user=DEFAULT_USER).with_retry(
         stop_after_attempt=2
     )
 
-    # day15 추가 
     from app.integrations.langfuse_client import score, trace
     from app.integrations.llm_claude import _extract_json 
 
@@ -121,7 +123,7 @@ def ask(*, question: str, run_id: str | None = None, user_id: int = 1) -> AskOut
             _record_usage(run_id, result)
 
             try:
-                data = _extract_json(result.text)
+                data = _extract_json(result.text) # 응답 파싱 
                 AnswerOut.model_validate(data)   # 규격에 맞는지 검사하는 부분 
             except ValidationError as e:
                 hint = _hint_from(e.errors(include_url=False))
@@ -148,7 +150,6 @@ def ask(*, question: str, run_id: str | None = None, user_id: int = 1) -> AskOut
             run.sources = [s.model_dump() for s in out.sources]
 
         return out 
-
 
 # 실행 기록 한 건 조회 
 def get_run(*, run_id: str) -> dict:

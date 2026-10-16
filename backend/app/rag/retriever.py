@@ -54,7 +54,6 @@ def source_dict(row: dict) -> dict:
             "quote": _shorten(row.get("text", ""))}
 
 
-# 수정 
 # 실제 DB를 확인하는 검색기 
 class LiveRetriever: 
     name = "live"
@@ -102,3 +101,9 @@ class LiveRetriever:
         return RetrievalResult(sources=sources, steps=steps, best_score=best,
                                passed=best >= settings.retrieval_threshold,
                                threshold=settings.retrieval_threshold)
+
+        
+
+
+
+
