@@ -46,6 +46,16 @@ class Settings(BaseSettings):
     embed_dim: int = EMBED_DIM
     upstage_embed_model: str | None = None
 
+	# --- 리랭커 추가 --------------------------------------------------------
+    # simple : 간이리랭커, cross_encoder : 모델이 질문과 조각을 한번에 읽어 점수 매김 
+    reranker: str = Field(default="simple", pattern=r"^(simple|cross_encoder)$")
+    rerank_model_dir: str = "../models/bge-reranker-v2-m3"
+    rerank_candidates: int = Field(default=12, ge=1, le=100)
+    # 질문  + 조각을 합쳐 이 토큰 수에서 자른다. (문서에 따라 수정 요함)
+    rerank_max_length: int = Field(default=512, ge=64, le=8192)
+    # 크로스 인코더 점수가 (0~1)가 이 값에 못미치면 근거부족. 
+    rerank_threshold: float = Field(default=0.2, ge=0.0, le=1.0)
+
 # 추가 
     # --- 검색 -----------------------------------------------------------
     retrieval_threshold: float = Field(default=0.55, ge=0.0, le=1.0) # 임계값. 점수를 넘지 못하면 근거 부족 

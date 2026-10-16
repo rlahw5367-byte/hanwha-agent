@@ -56,3 +56,10 @@ class EmbedderPort(Protocol):
     dim: int 
     def embed_documents(self, texts: list[str]) -> list[list[float]]: ...
     def embed_query(self, text: str) -> list[float]: ...
+
+# ----------- 크로스 인코더 -------------------------
+# 크로스 인코더 어댑터가 지켜야할 규약 
+@runtime_checkable
+class RerankerPort(Protocol):
+    name: str
+    def score_pairs(self, query: str, texts: list[str]) -> list[float]: ...
