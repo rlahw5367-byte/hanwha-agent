@@ -1,6 +1,6 @@
 """
-서비스 : 사용자 요청에 대한 로직 처리하는 곳
-DB 정보가 필요하면 reporitoty 호출
+서비스 : 사용자 요청에 대한 로직처리 하는곳. 
+DB 정보가 필요하면 repository를 호출. 
 트랜잭션을 여닫는 자리가 여기다.
 """
 from __future__ import annotations
@@ -9,14 +9,13 @@ from datetime import date, timedelta
 from uuid import uuid4 
 from app.core.exceptions import NotFound, ValidationFailed 
 from app.db.session import session_scope                            # 세션 DB 접속하기위한 통로 
-from app.models.document import Document, DocumentVersion        # 수정 : 데이터 넣는 가방들 
+from app.models.document import Document, DocumentVersion          # 데이터 넣는 가방들 
 from app.repositories import document_repo                          # 리포지토리 DB 접속시 필요 
-from app.repositories import document_repo   # 리포지토리 DB 접속 시 필요
-from app.models.document import Document, DocumentVersion, Chunk   # Chunk 추가 
 
-# 사용자에게 전달할 데이터를 예쁘게 만들어 주는 함수
+
+# 사용자에게 전달할 데이터를 예쁘게 만들어주는 함수 
 def _to_out(version: DocumentVersion, document: Document) -> dict:
-   # 여러 객체에 나눠져있는 데이터를 하나로 묶어주는 처리
+    # 여러 객체에 나눠줘있는 데이터를 하나로 묶어주는 처리 
     return {
         "doc_id": document.id,
         "title": document.title,
@@ -31,7 +30,7 @@ def _to_out(version: DocumentVersion, document: Document) -> dict:
         "index_progress": version.index_progress,
     }
 
-# 문서 목록 조회
+# 문서 목록 조회 
 def list_documents(
     *,
     dept_id: str | None = None,
@@ -41,10 +40,10 @@ def list_documents(
     limit: int = 50,
 ) -> list[dict]:
 
-    # 세션 만들어 repository 호출해 결과 받기
-    with session_scope() as s:
-        # repository(document_repo) 의 문서목록 함수 호출
-        rows = document_repo.list_documents(
+    # 세션만들어 repository 호출해 결과 받기 
+    with session_scope() as s: 
+        # repository(document_repo)의 문서목록 함수 호출 
+        rows = document_repo.list_documents( 
             s,
             dept_id=dept_id,
             security_level=security_level,
@@ -52,12 +51,12 @@ def list_documents(
             q=q,
             limit=limit,
         )
-        # 위 _to_out의 문서 version과 문서 자체를 전달해서 예쁘게 만들어 리스트로 전달
+        # 위 _to_out에 rows에 있는 문서version과 문서자체를 전달해서 예쁘게 만들어 리스트로 전달 
         return [_to_out(version, document) for version, document in rows]
 
-# 문서 1개 조회 : 문서 id 값 외부에서 전달해주면 해당 문서 1개 조회해서 리턴해준다.
+# 문서 1개 조회 : 문서 id 값 외부에서 전달해주면 해당 문서 1개 조회해서 리턴해준다. 
 def get_document(*, doc_id: str) -> dict:
-    # 세션 생성해 문서 1개 조회
+    # 세션 생성해 문서 1개 조회 
     with session_scope() as s:
         document = document_repo.get_document(s, doc_id)
         if document is None:
@@ -103,7 +102,7 @@ def create_document(
                 "버전 번호를 올려 다시 올려 주세요."
             )
 
-        # *추가* : 새 버전 저장 전에, 기존 버전들의 현행을 만료로 내리는 처리 (현행은 하나만)
+        # 새 버전 저장 전에, 기존 버전들의 현행을 만료로 내리는 처리 (현행은 하나만)
         for past in document.versions:
             if past.status == "현행":
                 past.status = "만료"
@@ -132,51 +131,32 @@ def create_document(
             "file_path": file_path,
             "created": created,
         }
-    
-    # 문서 없을 때
+
+# 문서 한건의 버전을 전부, 최신 버전이 앞에 오도록 리턴 
+def list_versions(*, doc_id: str) -> list[dict]:
     with session_scope() as s:
         document = document_repo.get_document(s, doc_id)
-        created = document is None
         if document is None:
-            document = Document(
-                id=doc_id,
-                title=title,
-                dept_id=dept_id,
-                security_level=security_level,
-                owner_id=owner_id,
-            )
-            s.add(document)
-            s.flush()
-        elif any(v.version == version for v in document.versions):
-            raise ValidationFailed(
-                f"{doc_id} 의 {version} 은(는) 이미 등록되어 있습니다. "
-                "판 번호를 올려 다시 올려 주세요."
-            )
-        
-        # 실제 문서 버전 저장
-        document_repo.add_version(
-            s,
-            document,
-            version=version,
-            status="현행",
-            effective_from=effective_from,
-            expires_at=None,
-            file_path=file_path,
-            file_format=file_format,
-            index_status="대기",     
-        )
+            raise NotFound(f"문서를 찾을 수 없습니다: {doc_id}")
+        return [
+            {
+                "version": v.version, 
+                "status" : v.status, 
+                "effective_from": v.effective_from, 
+                "expires_at": v.expires_at,
+                "chunk_count": v.chunk_count, 
+                "embed_model": v.embed_model, 
+                "index_status": v.index_status, 
+                "indexed_at": v.indexed_at, 
+                "searchable": v.is_searchable, 
+                "period": v.period
+            }
+            for v in sorted(document.versions, key=lambda v: v.version, reverse=True)
+        ]
 
-        # 저장 후 화면에 전달할 데이터 리턴
-        return {
-            "doc_id": document.id,
-            "title": document.title,
-            "version": version,
-            "file_format": file_format,
-            "file_path": file_path,
-            "created": created,
-        }
 
-# 수정 : 업로드 요청한 파일 하나를 파싱 -> 청킹 -> 저장까지 이어주는 함수 
+
+# 업로드 요청한 파일 하나를 파싱 -> 청킹 -> 저장까지 이어주는 함수 
 def ingest_document(*, doc_id: str, version: str, path: str) -> dict:
     from app.rag import chunker, parser, embedder, store
 
@@ -201,8 +181,8 @@ def ingest_document(*, doc_id: str, version: str, path: str) -> dict:
         dv.indexed_at = date.today() 
         return {"chunks": len(drafts), "tables":parsed.table_count,
                 "vectors":len(vectors) ,"summary": chunker.summarize(drafts)}
+    
 
-# 추가 
 # 작업 상태를 담아두는 곳 
 _JOBS: dict[str, str] = {}
 _STEP_NAMES = ["파일 검증", "문서 파싱", "표 -> 마크다운 변환", "청킹", "임베딩", "검색 반영 및 현행 버전 지정"]
@@ -217,7 +197,6 @@ def start_ingest_job(*, doc_id: str, version: str, path: str) -> str:
         "chunk_count": 0, "message": "",
     }
     return job_id 
-
 
 # 작업을 실제로 돌리기 함수 : BackgroundTasks 가 응답 보낸 후 호출하는 함수 
 def run_ingest_job(job_id: str) -> None:
@@ -242,37 +221,8 @@ def run_ingest_job(job_id: str) -> None:
         job['status'] = '실패'
         job['message'] = str(exc)
 
-# 작업 하나의 진행 상태를 리턴해주는 함수 
-def get_job(job_id: str) -> dict:
-    job = _JOBS.get(job_id)
-    if job is None:
-        raise NotFound(f"작업을 찾을 수 없습니다: {job_id}")
-    return job 
 
-
-# 추가 : 문서 한건의 버전을 전부, 최신 버전이 앞에 오도록 리턴 
-def list_versions(*, doc_id: str) -> list[dict]:
-    with session_scope() as s:
-        document = document_repo.get_document(s, doc_id)
-        if document is None:
-            raise NotFound(f"문서를 찾을 수 없습니다: {doc_id}")
-        return [
-            {
-                "version": v.version, 
-                "status" : v.status, 
-                "effective_from": v.effective_from, 
-                "expires_at": v.expires_at,
-                "chunk_count": v.chunk_count, 
-                "embed_model": v.embed_model, 
-                "index_status": v.index_status, 
-                "indexed_at": v.indexed_at, 
-                "searchable": v.is_searchable, 
-                "period": v.period
-            }
-            for v in sorted(document.versions, key=lambda v: v.version, reverse=True)
-        ]
-
-# 이미 등록된 문서 버전 한개를 다시 적재하는 작업 : 재임베딩 
+# 이미 등록된 문서 버전 한개를 다시 적재하는 작업 
 def start_reindex_job(*, doc_id: str, version: str) -> str:
     with session_scope() as s:
         document = document_repo.get_document(s, doc_id)
@@ -283,3 +233,18 @@ def start_reindex_job(*, doc_id: str, version: str) -> str:
         dv.index_status = "재임베딩"
         dv.index_progress = 0 
     return start_ingest_job(doc_id=doc_id, version=version, path=path)
+
+
+
+
+# 작업 하나의 진행 상태를 리턴해주는 함수 
+def get_job(job_id: str) -> dict:
+    job = _JOBS.get(job_id)
+    if job is None:
+        raise NotFound(f"작업을 찾을 수 없습니다: {job_id}")
+    return job 
+
+
+
+
+

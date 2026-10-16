@@ -1,3 +1,10 @@
+# 골든셋 30문항 - 검색 품질 측정용 
+# 규칙 
+# - 정답은 "어느 문서의 어느 조항에 있는가"로 작성. 문장 전체를 작성하지 않는다. 
+# - type은 : 경우의 수 별로 구분 (화면 출력을 위해 정답률이 낮은 질문 유형과 같은 이름 사용함)
+# - unanswerable : true는 근거 부족 응답이 나와야 정답인 문항 
+# - 골든셋 작성시, 원문과 대조하여 정확한 기대 답변 작성 필요 
+
 meta:
   name: 사내 규정 골든셋 v1
   items: 30
@@ -121,7 +128,7 @@ items:
   - id: G18
     question: 4급 직원의 숙박비 상한은 개정 전에 얼마였나요?
     type: 개정 전후 비교
-    expect_doc: DOC-HR-014d
+    expect_doc: DOC-HR-014
     expect_version: v1.1
     needs_past_version: true
     expect_keywords: ["65,000"]

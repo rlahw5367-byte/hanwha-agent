@@ -33,11 +33,10 @@ def render() -> None:
 
     left, right = st.columns([2.1, 1])
     with left:
-        _version_timeline(versions)
+        _version_timeline(versions)  # 버전 이력 
     with right:
-        _policy_card()
-        _actions(doc["doc_id"], doc["version"])
-
+        _policy_card()   # 검색 정책 
+        _actions(doc["doc_id"], doc["version"])   # 작업 버튼 (처리 과정 시작)
 
 
 # 버전 하나를 타임라인 항목 하나로 만들어주는 함수 
@@ -57,6 +56,34 @@ def _version_block(v: dict) -> str:
         f'청크 {v["chunk_count"]} · 검색 반영 {escape(v["index_status"])}</span></div>'
         f'<div class="ag-src-meta">{escape(detail)}</div>'
     )
+
+# 문서 버전들 이력을 타임라인으로 그려주는 함수
+def _version_timeline(versions: list[dict]) -> None: 
+    st.subheader("버전 이력")
+    if not versions:
+        st.info("등록된 문서 버전이 없습니다.")
+        return 
+    timeline([_version_block(v) for v in versions])
+    st.caption("변경 이력(누가 언제 올렸는가)은 추후 감사 로그에서 전달받을 예정")
+
+# 검색 정책 카드 그리기 
+def _policy_card() -> None: 
+    st.subheader("검색 정책")
+    rows = [
+        ("현행 버전만 기본 검색", badge_html("ON", "ok")),
+        ("사용자 요청 시 과거 버전 조회", badge_html("ON", "ok")),
+        ("보안등급 필터", badge_html("ON", "ok")),
+        ("유사도 임계값", badge_html("0.55", "neutral")),
+    ]
+    body = "".join(
+        '<div style="display:flex;justify-content:space-between;align-items:center;'
+        'padding:9px 0;border-bottom:1px solid var(--ag-line)">'
+        f'<span style="font-size:var(--ag-fs-sm)">{escape(label)}</span>{chip}</div>'
+        for label, chip in rows
+    )
+    card(body)
+    st.caption("값은 backend/app/rag/policy.py 의 SearchPolicy 가 정합니다.")
+
 
 # 작업 버튼 그리기. 
 def _actions(doc_id: str, version: str) -> None: 
@@ -93,3 +120,7 @@ def _watch_job() -> None:
             st.caption(job["message"])
     elif st.button("다시 보기", key="poll_index"):
         st.rerun() 
+
+
+
+

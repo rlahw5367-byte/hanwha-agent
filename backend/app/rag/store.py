@@ -115,3 +115,16 @@ def fuse(vector_rows: list[dict], keyword_rows: list[dict], *, k: int = 60) -> l
     for r in merged:
         r.pop("_rrf", None)
     return merged
+
+
+# 정해진 청크들과 질문 벡터의 유사를 재는 함수 
+def vector_scores(session: Session, query_vec: list[float], chunk_ids: list[int]) -> dict[int, float]:
+    if not query_vec or not chunk_ids:
+        return {}
+    distance = Chunk.embedding.cosine_distance(query_vec)
+    stmt = (select(Chunk.id, distance)
+            .where(Chunk.id.in_(chunk_ids))
+            .where(Chunk.embedding.is_not(None)))
+    return {cid: round(1.0 - float(dist), 4) for cid, dist in session.execute(stmt)}
+
+

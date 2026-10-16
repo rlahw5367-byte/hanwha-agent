@@ -19,8 +19,8 @@ def _request(
     *,
     params: dict | None = None,  # 쿼리스트링 ?aaa=10
     json: dict | None = None,    # 요청 본문으로 보낼 dict 타입 데이터 
-    data:dict | None = None,     # 멀티파트 텍스트 필드
-    files: dict | None = None,   # 멀티파트 파일데이터 필드
+    data: dict | None = None,    # 멀티파트 텍스트 필드 
+    files: dict | None = None,   # 멀티파트 파일데이터 필드 
     emp_no: str | None = None,   # 사원번호. X-Emp-No 헤더값 
 ) -> Any:
 
@@ -35,7 +35,7 @@ def _request(
     url = f"{BASE_URL}{path}"
 
     try:
-        # 백엔드에 요청 : # 수정 : data, files 추가 
+        # 백엔드에 요청 
         response = httpx2.request(
             method, url, params=clean_params, json=json, data=data, files=files, headers=headers, timeout=TIMEOUT
         )
@@ -98,14 +98,11 @@ def stats(*, emp_no: str | None = None) -> dict:
         "reindexing" : sum(1 for row in rows if row["index_status"] == "재임베딩 ")
     }
 
-
-# 질문 하나 백엔드에 보내면 답변을 받아오는 함수
+# 질문 하나 백엔드에 보내면 답변을 받아오는 함수 
 def ask(question: str) -> dict:
-    # question: 사용자가 입력창에 입력한 질문
+    # question: 사용자가 입력창에 입력한 질문 
     return _request("POST", "/api/v1/chat/messages", json={"question": question})
 
-
-# 파일 하단에 추가 
 # 파일 하나를 백엔드에 전달 -> 업로드 처리 요청 -> 작업 번호 리턴  
 def upload_document(*, doc_id: str, title: str, dept_id: str, security_level: str, 
                     version: str, effective_from: str, filename: str, content: bytes, 
@@ -123,3 +120,12 @@ def upload_document(*, doc_id: str, title: str, dept_id: str, security_level: st
 # 업로드 작업의 진행 상태 하나 요청 
 def get_job(job_id: str, *, emp_no:str | None = None) -> dict:
     return _request("GET", f"/api/v1/documents/jobs/{job_id}", emp_no=emp_no)
+
+# 문서 한 건의 버전들을 모두 요청
+def list_versions(doc_id: str, *, emp_no: str | None = None) -> list[dict]:
+    return _request("GET", f"/api/v1/documents/{doc_id}/versions", emp_no=emp_no)
+
+# 재임베딩 요청 (파일을 다시 올리지는 않는다.)
+def reindex(doc_id: str, version: str, *, emp_no: str | None = None) -> dict:
+    return _request("POST", f"/api/v1/documents/{doc_id}/versions/{version}/reindex", emp_no=emp_no)
+
