@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import time 
+import json 
 
 import app.integrations.factory as factory 
 
@@ -13,8 +14,9 @@ from app.core.exceptions import NotFound
 from app.db.session import session_scope
 from app.models import Run, UsageLog
 from app.services.ids import next_run_id
-from app.schemas.chat import AnswerOut, AskOut
+from app.schemas.chat import AnswerOut, AskOut, AnswerSource
 from app.agent.chain import build_result_chain 
+from app.tools import search_documents 
 
 
 log = get_logger(__name__)
@@ -194,8 +196,72 @@ def get_run(*, run_id: str) -> dict:
             "created_at": run.created_at.isoformat(),
         }
 
+# ----- 도구 루프 추가 -------------------------------------
+
+# 도구 호출 요청, 응답 왕복의 횟수 상한값
+MAX_TOOL_TURNS = 3 
+
+# 모델에게 전달하는 도구 정의 목록 
+TOOLS = [search_documents.SCHEMA]
+
+# 도구 이름 -> 실제로 실행하라 함수 
+TOOL_RUNNERS = {search_documents.NAME: search_documents.run} 
+
+# 왕복 상한에 도달해 답변을 완성하지 못했을때의 문구 
+TOOL_LIMIT_ANSWER = "(도구 호출 상한에 닿아 답을 마치지 못했습니다)"
+
+# 질문 하나에 도구 루프로 답하는 함수 
+def ask_with_tools(*, question: str, run_id: str | None = None, user_id: int = 1) -> AskOut:
+    q = check_question(question)
+    llm = factory.get_llm()
+    started = time.perf_counter() 
+    with session_scope() as session:
+        if run_id is None:
+            run_id = next_run_id(session)
+        session.add(Run(id=run_id, user_id=user_id, question=q, 
+                    status="진행중", mode=get_settings().app_mode))
+
+    user = {**DEFAULT_USER, "clearance": "일반"} # 임시 사용자 정보 
+    messages: list[dict] = [{"role": "user", "content": q}]
+    last_out: dict = {}    # 마지막 도구 실행 결과 
+    text = TOOL_LIMIT_ANSWER  # 상한에 도달하면 이 문구가 남아있도록 초기화 
+
+    for turn in range(1, MAX_TOOL_TURNS + 1):
+        result = llm.answer_with_tools(messages=messages, tools=TOOLS, user=user)
+        _record_usage(run_id, result) 
+
+        calls = result.extras.get("tool_calls") or [] 
+        if not calls: # 도구 호출하지 않았을 경우 = 마지막 턴 
+            text = result.text 
+            break 
+
+        # assistant 턴을 대화 기록에 그대로 추가 -> 모델이 직전 응답 기억 
+        messages.append({"role": "assistant", "content": result.extras["blocks"]})
+        blocks = []
+        for c in calls:
+            runner = TOOL_RUNNERS.get(c.name) 
+            out = runner(**c.args, user=user) if runner else {"error": f"모르는 도구: {c.name}"}
+            last_out = out if runner else last_out
+            blocks.append({"type": "tool_result", "tool_use_id": c.id, 
+                           "content": json.dumps(out, ensure_ascii=False, default=str)})
+        messages.append({"role": "user", "content": blocks})
+    else: 
+        log.warning("도구 호출 상항 %d회에 닿았습니다(run_id=%s)", MAX_TOOL_TURNS, run_id) 
+
+    # 출처는 모델에게 다시 묻지 않는다. 
+    sources = []
+    for s in last_out.get("sources", []):
+        try:
+            sources.append(AnswerSource(**s))
+        except ValidationError:
+            log.warning("근거를 스키마로 만들지 못해 건너띕니다: %s", s.get("doc_id"))
+
+    out = AskOut(answer=text, sources=sources, run_id=run_id, attempts=turn,
+                 enough_evidence=bool(last_out.get("passed")),
+                 steps=last_out.get("steps", []), fallback_used=False)
+    _close_run(run_id, out, started)
+    return out 
 
 
-
-
+    
 

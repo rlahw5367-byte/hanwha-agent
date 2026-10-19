@@ -6,7 +6,7 @@ from pathlib import Path
 from app.core.config import get_settings
 from app.core.exceptions import ExternalServiceError
 from app.core.logging import get_logger
-from app.integrations.ports import LLMResult
+from app.integrations.ports import LLMResult, ToolCall    # 추가 
 
 # 로거 생성
 log = get_logger(__name__)
@@ -113,6 +113,49 @@ class ClaudeLLM:
             output_tok=usage["output"],
             cost_krw=estimate_cost_krw(total_in, usage["output"]),
             latency_ms=ms
+        )
+    
+    # 도구 목록을 함께 전달해 Messages API를 한번 호출 
+    def _call_tools(self, system: str, messages: list[dict], tools: list[dict]) -> tuple[object, dict, int]:
+        started = time.perf_counter() 
+        try:
+            resp = self._client.messages.create(
+                model=self._model, 
+                max_tokens=get_settings().max_tokens, 
+                system=system, 
+                messages=messages, 
+                tools=tools, 
+            )
+        except Exception as e:
+            log.exception("Claude 도구 호출 실패")
+            raise ExternalServiceError(f"Claude 호출에 실패했습니다: {e}") from e 
+        u = resp.usage 
+        usage = {
+            "input": getattr(u, "input_tokens", 0) or 0, 
+            "cache_read": getattr(u, "cache_read_input_tokens", 0) or 0, 
+            "cache_write": getattr(u, "cache_creation_input_tokens", 0) or 0, 
+            "output": getattr(u, "output_tokens", 0) or 0,
+        }
+        return resp, usage, int((time.perf_counter() - started) * 1000)
+        
+    # 도구 목록을 전달하고, 1회 호출한다. 
+    def answer_with_tools(self, *, messages: list[dict], tools: list[dict], user: dict) -> LLMResult:
+        system = _load_prompt("agent_system.md")
+        system = f"{system}\n\n## 질문한 사람\n{user.get('name')} - {user.get('dept')}"
+        resp, usage, ms = self._call_tools(system, messages, tools)
+        text = "".join(b.text for b in resp.content if getattr(b, "type", "") == "text")
+        calls = [ToolCall(id=b.id, name=b.name, args=dict(b.input))
+            for b in resp.content if getattr(b, "type", "") == "tool_use"]
+        total_in = usage["input"] + usage["cache_read"] + usage["cache_write"]
+        return LLMResult(
+            text=text, model=self._model, input_tok=total_in, 
+            cache_tok=usage["cache_read"], output_tok=usage["output"], 
+            cost_krw=estimate_cost_krw(total_in, usage["output"]), latency_ms=ms, 
+            extras={
+                "tool_calls": calls, 
+                "stop_reason": resp.stop_reason, 
+                "blocks": [b.model_dump(exclude_none=True) for b in resp.content]
+            }
         )
 
 # 모델이 코드펜스로 감싸서 보낸 경우, 원활한 파싱을 위한 전처리 필수
