@@ -7,6 +7,7 @@ import streamlit as st
 def current_page() -> str:
     return st.session_state.get("page", "login")
 
-# 화면 이동
+# 화면 이동 
 def go(page: str) -> None:
-    st.session_state["page"] = page
+    st.session_state["page"] = page 
+    st.rerun()   # 추가 

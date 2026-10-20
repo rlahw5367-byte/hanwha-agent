@@ -38,3 +38,20 @@ class AskOut(AnswerOut):
         default=False, 
         description="세 번 모두 실패해 폴백 답변으로 대처한 여부"
     )
+
+# 도구가 만든 문서 초안 한 건 
+class DraftOut(BaseModel):
+    doc_type: str = Field(description="문서 양식 이름. 예: 국내출장 신청서")
+    fields: dict[str, str] = Field(description="양식의 칸과 값. 값은 모두 문자열")
+    body: str = Field(description="문서 초안 전문")
+
+# 재시도/폴백 관련 정보 추가 : 라우터가 사용자에게 돌려주는 최종 응답 객체 
+class AskOut(AnswerOut):
+    run_id: str = Field(description="이 질문 한 건의 실행 번호.예: RUN-1234")
+    steps: list[dict] = Field(default_factory=list, description="검색 과정 단계 목록")
+    attempts: int = Field(default=1, description="스키마 검증에 성공하기까지 부른 횟수")
+    fallback_used: bool = Field(
+        default=False, 
+        description="세 번 모두 실패해 폴백 답변으로 대처한 여부"
+    )
+    draft: DraftOut | None = Field(default=None, description="도구가 만든 문서 초안. 없으면 null")

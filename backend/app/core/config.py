@@ -3,6 +3,9 @@ from pydantic import Field, SecretStr
 from functools import lru_cache
 from app.models.base import EMBED_DIM
 
+# 모델 미리 로딩 (추가) 
+warn_up_models: bool = True 
+
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(

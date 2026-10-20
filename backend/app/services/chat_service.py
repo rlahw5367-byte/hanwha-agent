@@ -17,6 +17,7 @@ from app.services.ids import next_run_id
 from app.schemas.chat import AnswerOut, AskOut, AnswerSource
 from app.agent.chain import build_result_chain 
 from app.tools import search_documents 
+from app.tools import create_draft
 
 
 log = get_logger(__name__)
@@ -202,10 +203,11 @@ def get_run(*, run_id: str) -> dict:
 MAX_TOOL_TURNS = 3 
 
 # 모델에게 전달하는 도구 정의 목록 
-TOOLS = [search_documents.SCHEMA]
+TOOLS = [search_documents.SCHEMA, create_draft.SCHEMA]
 
 # 도구 이름 -> 실제로 실행하라 함수 
-TOOL_RUNNERS = {search_documents.NAME: search_documents.run} 
+TOOL_RUNNERS = {search_documents.NAME: search_documents.run, 
+                create_draft.NAME: create_draft.run} 
 
 # 왕복 상한에 도달해 답변을 완성하지 못했을때의 문구 
 TOOL_LIMIT_ANSWER = "(도구 호출 상한에 닿아 답을 마치지 못했습니다)"
@@ -222,8 +224,13 @@ def ask_with_tools(*, question: str, run_id: str | None = None, user_id: int = 1
                     status="진행중", mode=get_settings().app_mode))
 
     user = {**DEFAULT_USER, "clearance": "일반"} # 임시 사용자 정보 
+
+    ours = {search_documents.NAME: {"user": user}, 
+            create_draft.NAME: {"user": user, "run_id": run_id}}
+
     messages: list[dict] = [{"role": "user", "content": q}]
     last_out: dict = {}    # 마지막 도구 실행 결과 
+    made: dict | None = None # 초안 결과 따로 받기 
     text = TOOL_LIMIT_ANSWER  # 상한에 도달하면 이 문구가 남아있도록 초기화 
 
     for turn in range(1, MAX_TOOL_TURNS + 1):
@@ -240,8 +247,13 @@ def ask_with_tools(*, question: str, run_id: str | None = None, user_id: int = 1
         blocks = []
         for c in calls:
             runner = TOOL_RUNNERS.get(c.name) 
-            out = runner(**c.args, user=user) if runner else {"error": f"모르는 도구: {c.name}"}
-            last_out = out if runner else last_out
+            out = runner(**c.args, **ours[c.name]) if runner else {"error": f"모르는 도구: {c.name}"}
+
+            if runner and c.name == create_draft.NAME:
+                made = out 
+            elif runner:
+                last_out = out 
+
             blocks.append({"type": "tool_result", "tool_use_id": c.id, 
                            "content": json.dumps(out, ensure_ascii=False, default=str)})
         messages.append({"role": "user", "content": blocks})
@@ -258,9 +270,11 @@ def ask_with_tools(*, question: str, run_id: str | None = None, user_id: int = 1
 
     out = AskOut(answer=text, sources=sources, run_id=run_id, attempts=turn,
                  enough_evidence=bool(last_out.get("passed")),
-                 steps=last_out.get("steps", []), fallback_used=False)
+                 steps=last_out.get("steps", []), fallback_used=False, 
+                 draft=made if made and "body" in made else None)
     _close_run(run_id, out, started)
     return out 
+
 
 
     

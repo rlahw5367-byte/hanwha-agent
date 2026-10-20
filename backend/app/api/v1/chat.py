@@ -9,9 +9,11 @@ router = APIRouter(prefix="/chat", tags=["chat"])
 
 # 채팅 질문 요청 -> 답변 돌려주기 
 @router.post("/messages", response_model=AskOut)
-def create_message(payload: ChatRequest) -> AskOut:
+def create_message(payload: ChatRequest, tools: bool = False) -> AskOut:
+    if tools:
+        return chat_service.ask_with_tools(question=payload.question)
     # 서비스에게 사용자 질문 주고 로직처리 시키기 
-    return chat_service.ask(question=payload.question) 
+    return chat_service.ask(question=payload.question)  
 
 # * 추가 *
 # 실행 기록 한건 조회 

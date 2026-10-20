@@ -7,7 +7,7 @@ NAME = "search_documents"
 SIDE_EFFECT = "none"
 
 # 모델에게 보낼 근거의 필드 
-SOURCE_KEYS = ("doc_id", "title", "version", "locator", "score", "quote")
+SOURCE_KEYS = ("doc_id", "title", "version", "locator", "score", "quote", "text")  # text 추가 
 
 # 도구 정의 (json schema)
 SCHEMA = {

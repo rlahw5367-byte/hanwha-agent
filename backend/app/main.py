@@ -1,17 +1,43 @@
+from __future__ import annotations
+
+import time # 추가 
+
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse 
-from app.api.v1 import auth, documents, chat, ops   # 추가 
+from app.api.v1 import auth, documents, chat, ops
+from app.core.config import get_settings # 추가 
 from app.core.exceptions import AgentError
 from contextlib import asynccontextmanager
-from app.core.logging import setup_logging
+from app.core.logging import setup_logging, get_logger # 추가 
 from fastapi.exceptions import RequestValidationError
+from app.integrations import factory # 추가 
+
+# 추가 
+log = get_logger(__name__)
+
+# 추가 : 서버 스타트 시, 로컬 모델 미리 열어두기 
+def _warn_up_models() -> None:
+    settings = get_settings()
+    if not settings.warn_up_models:
+        return 
+    started = time.perf_counter()
+    try:
+        if settings.embed_provider == "local":
+            factory.get_embedder()
+        if settings.reranker == "cross_encoder":
+            factory.get_cross_encoder() 
+    except AgentError as e:
+        log.warning("모델을 미리 열지 못했습니다 - %s (첫 질문에서 다시 엽니다)", e.message)
+        return 
+    log.info("모델 미리 열기 완료: %.1f초", time.perf_counter() - started)
 
 
 # lifespan 함수 정의 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     setup_logging() 
-    yield
+    _warn_up_models()   # 추가 
+    yield 
 
 # FastAPI 앱 생성 
 app = FastAPI(

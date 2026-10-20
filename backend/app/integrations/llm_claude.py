@@ -36,7 +36,7 @@ def _cotext_block(contexts: list[dict]) -> str:
     for i, c in enumerate(contexts, 1):
         lines.append(
             f"[근거 {i}] {c.get('title')} {c.get('version')} · {c.get('locator')} "
-            f"(유사도 {c.get('score', 0):.2f})\n{c.get('quote') or c.get('text') or ''}"
+            f"(유사도 {c.get('score', 0):.2f})\n{c.get('text') or c.get('quote') or ''}"  # 수정 
         )
     return "\n\n".join(lines) if lines else "(근거 문서 없음)"
 
