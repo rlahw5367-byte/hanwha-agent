@@ -89,3 +89,4 @@ transformers
 pytest
 alembic
 langgraph==1.2.11
+slack-sdk==3.44.1

@@ -308,4 +308,11 @@ def run_workflow(*, question: str) -> dict:
     return run_chain([_wf_search, _wf_route], state)
 
     
-
+# ------- 그래프 ---------------------------
+def run_graph(*, question: str) -> dict: 
+    from app.agent.graph import build_graph
+    
+    q = check_question(question)
+    registry.load_all() 
+    graph = build_graph(_wf_search, {"found": _wf_found, "insufficient": _wf_insufficient}, route_after_search)
+    return graph.invoke({"question": q, "user": {**DEFAULT_USER, "clearance": "일반"}})
