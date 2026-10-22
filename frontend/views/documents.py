@@ -100,8 +100,8 @@ def _table(documents: list[dict]) -> None:
 # 화면을 그리기 
 def render() -> None:
     st.title("문서 관리")
-    st.caption("상태 필터가 「전체」라 지난 판까지 함께 보입니다. "
-               "「현행」으로 좁히면 현재 유효한 최신본만 남습니다.")
+    st.caption("상태 필터의 기본값이 「현행」입니다. 지금 유효한 최신본만 보입니다."
+               "「전체」로 넓히면 만료된 지난 버전까지 함께 보입니다.")
 
     _metrics_row() # 지표그리기 호출 
 
@@ -128,10 +128,9 @@ def render() -> None:
     st.caption(f"{len(documents)}건") # 문서 건수 출력 
     
     _table(documents) # 테이블에 그리기 호출 
-    _open_detail(documents) # 추가 : 표에서 문서 하나 고르면, 상세 페이지로 넘어가기 
+    _open_detail(documents) # 표에서 문서 하나 고르면, 상세 페이지로 넘어가기 
 
 
-# 추가 
 def _open_detail(documents: list[dict]) -> None: 
     doc_ids = list(dict.fromkeys(document["doc_id"] for document in documents))
     left, right = st.columns([3, 1])
@@ -142,3 +141,4 @@ def _open_detail(documents: list[dict]) -> None:
         if st.button("버전 이력 보기", use_container_width=True):
             st.session_state["selected_doc"] = chosen
             router.go("document_detail")
+    

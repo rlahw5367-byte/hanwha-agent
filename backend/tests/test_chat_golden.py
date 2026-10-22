@@ -8,19 +8,37 @@ import pytest
 import app.integrations.factory as factory
 from app.core.exceptions import GuardTripped
 from app.core.guards import check_model
-from app.integrations.ports import LLMResult
+from app.integrations.ports import LLMResult, RetrievalResult
 from app.services import chat_service
 
 GOLDEN_PATH = Path(__file__).resolve().parent / "golden" / "chat_golden.json"
 GOLDEN = json.loads(GOLDEN_PATH.read_text(encoding="utf-8"))
 
-# 가짜 LLM
+
+@pytest.fixture(autouse=True)
+def stub_retriever(monkeypatch):
+    import app.rag.retriver as retriever_module
+
+    class _StubRetriever:
+        name = "stub"
+        def search(self, *, question, user, session, **_):
+            return RetrievalResult(
+                sources=[{"doc_id": "DOC-HR-014", "title": "국내출장 여비 규정",
+                          "version": "v2.0", "locator": "제12조(숙박비) · p.6", 
+                          "score": 0.90, "quote": "(대역)"}], 
+                steps=[{"name": "대역 검색", "state": "ok"}], 
+                best_score=0.90, passed=True, threshold=0.55
+            )
+
+    monkeypatch.setattr(retriever_module, "LiveRetriever", _StubRetriever)
+
+
+# 가짜 LLM 
 class StubLLM:
     name = "stub"
     def __init__(self, replies: list[str]) -> None:
         self.replies = list(replies)
         self.calls = 0
-
     def answer(self, *, question: str, contexts: list[dict], user: dict) -> LLMResult:
         text = self.replies[min(self.calls, len(self.replies) - 1)]
         self.calls += 1
@@ -34,16 +52,14 @@ class StubLLM:
             latency_ms=900,
         )
 
-# 판정 함수
+# 판정 함수 
 def check(case: dict, out) -> list[str]:
     expect = case["expect"]
     problems: list[str] = []
 
-
     for needle in expect.get("contains", []):
         if needle not in out.answer:
             problems.append(f"answer 에 '{needle}' 이 없습니다")
-
 
     for needle in expect.get("not_contains", []):
         if needle in out.answer:
@@ -68,7 +84,7 @@ def check(case: dict, out) -> list[str]:
 
     return problems
 
-# 문항 문자열 생성 함수
+# 문항 문자열 생성 함수 
 def _question_of(case: dict) -> str:
     return case["question"] * case.get("repeat", 1)
 
@@ -77,7 +93,6 @@ def _question_of(case: dict) -> str:
 def test_golden(case: dict, monkeypatch) -> None:
     
     expect = case["expect"]
-
    
     if "raises" in expect:
         with pytest.raises(GuardTripped) as caught:
@@ -96,3 +111,4 @@ def test_golden(case: dict, monkeypatch) -> None:
 
     assert stub.calls > 0, "가짜 어댑터가 한 번도 불리지 않았습니다"
     assert check(case, out) == []
+

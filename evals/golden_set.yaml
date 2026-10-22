@@ -6,7 +6,7 @@
 # - 골든셋 작성시, 원문과 대조하여 정확한 기대 답변 작성 필요 
 
 meta:
-  name: 사내 규정 골든셋 v1
+  name: 사내 규정 골든셋 v2
   items: 30
   threshold: 0.55
 
@@ -175,6 +175,7 @@ items:
     expect_version: v2.2
     requires_clearance: 대외비
     expect_keywords: ["접근권한", "보안팀장이 승인"]
+
 
   # ── 규정에 없는 사항 (6) — 근거부족 응답이 정답 ──
   - id: G25

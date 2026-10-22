@@ -31,7 +31,6 @@ USERS: list[dict] = [
 ]
 
 
-
 DOCUMENTS: list[dict] = [
     {
         "id": "DOC-HR-014", "title": "국내출장 여비 규정", "dept_id": "HRGA",

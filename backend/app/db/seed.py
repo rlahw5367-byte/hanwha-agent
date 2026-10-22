@@ -8,7 +8,7 @@ from app.db.seed_data import DEPARTMENTS, DOCUMENTS, TEMP_PASSWORD, USERS
 from app.db.session import session_scope
 from app.models import Department, Document, DocumentVersion, User
 
-
+# 테이블 레코드수 리턴 
 def count_rows(session: Session) -> dict[str, int]:
 
     return {
@@ -18,21 +18,20 @@ def count_rows(session: Session) -> dict[str, int]:
         "versions": session.scalar(select(func.count()).select_from(DocumentVersion)) or 0,
     }
 
-# 데이터 적재
+# 데이터 적제 
 def seed_all(session: Session | None = None) -> dict[str, int]:
     if session is not None:
         return _seed(session)
     with session_scope() as s:
         return _seed(s)
 
-# 적재 처리
+#  적제 처리 
 def _seed(session: Session) -> dict[str, int]:
 
     if session.scalar(select(func.count()).select_from(Document)):
         return count_rows(session)
 
     session.add_all(Department(**row) for row in DEPARTMENTS)
-
 
     temp_hash = hash_password(TEMP_PASSWORD)
     session.add_all(User(**row, password_hash=temp_hash) for row in USERS)

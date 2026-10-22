@@ -6,12 +6,13 @@ from core import session
 # 로그인 화면 그리기 
 def render() -> None:
     st.title("사내 업무 에이전트")
-    st.write("사번과 비밀번호로 로그인하세요")
+    st.write("사번과 비밀번호로 로그인하세요.")
 
-    # 사용자 입력란: 입력하면 st.session_state 상태에 저장
+    # 사용자 입력란 : 입력하면 st.session_stat에 자동으로 데이터 저장 
     st.text_input("사번", key="login_emp_no", placeholder="예) 2016-0231")
     st.text_input("비밀번호", type="password", key="login_pw")
 
+    # 로그인 버튼 
     if not st.button("로그인"):
         return
 

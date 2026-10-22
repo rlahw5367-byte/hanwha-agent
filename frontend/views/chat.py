@@ -16,6 +16,9 @@ def render() -> None:
     for message in st.session_state['chat']:
         with st.chat_message(message['role']):
             st.markdown(message['content'])
+
+    # 체크박스 : 체크하면 서버가 도구 루프로 답한다. 
+    use_tools = st.checkbox("업무 문서까지 작성 (도구 사용)", key="chat_use_tools")
     
     # 채팅 입력창 생성 
     question = st.chat_input('무엇을 도와드릴까요?')
@@ -34,7 +37,7 @@ def render() -> None:
         with st.spinner('사내 규정 찾아보는 중...'):
             # 백엔드에 질문 주고 답변 요청 
             try:
-                response = api_client.ask(question) 
+                response = api_client.ask(question, tools=use_tools) 
             except api_client.ApiError as e:
                 st.error(str(e))
                 return 

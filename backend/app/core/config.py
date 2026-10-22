@@ -1,11 +1,8 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import Field, SecretStr
 from functools import lru_cache
-from app.models.base import EMBED_DIM
 
-# 모델 미리 로딩 (추가) 
-warn_up_models: bool = True 
-
+from app.models.base import EMBED_DIM 
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
@@ -29,27 +26,29 @@ class Settings(BaseSettings):
     # --- 기본 설정 ----------------------------------------------------
     debug: bool = False
     allow_external_send: bool = False
-    # --- 관측 langfuse -------------------------------------------------
+    # --- 관측 langfuse ------------------------------------------------
     langfuse_enabled: bool = False 
     langfuse_host: str = "http://localhost:3000"
     langfuse_public_key: str | None = None
     langfuse_secret_key: SecretStr | None = None
-    # --- Upstage 추가 ------------------------------------------------------
+    # --- Upstage ------------------------------------------------------
     upstage_api_key: SecretStr | None = None
     upstage_base_url: str = "https://api.upstage.ai/v1"
     upstage_parse_model: str = "document-parse"
     upstage_parse_ocr: str = "auto"  
-
-    # --- Embedding ------------------------------------------------------
-    embed_provider: str = Field(
-        default="local",
-        pattern=r"^(local|upstage)"
-    )
+    # --- embedding ----------------------------------------------------
+    embed_provider: str = Field(default="local", pattern=r"^(local|upstage)")
     embed_model_dir: str = "../models/bge-m3"
     embed_dim: int = EMBED_DIM
-    upstage_embed_model: str | None = None
+    upstage_embed_model: str | None = None 
 
-	# --- 리랭커 추가 --------------------------------------------------------
+    # --- 검색 -----------------------------------------------------------
+    retrieval_threshold: float = Field(default=0.60, ge=0.0, le=1.0) # 임계값. 점수를 넘지 못하면 근거 부족 
+    retrieval_top_k: int = Field(default=12, ge=1, le=100)  # 벡터 검색이 받아올 후보 갯수 
+    multi_query_n: int = Field(default=3, ge=1, le=10) # 질문을 몇 갈래까지 늘리는가 
+    rerank_top_n: int = Field(default=3, ge=1, le=20) # 다시 줄 세운 뒤 몇 건을 남길 것인가 
+
+    # --- 리랭커 --------------------------------------------------------
     # simple : 간이리랭커, cross_encoder : 모델이 질문과 조각을 한번에 읽어 점수 매김 
     reranker: str = Field(default="simple", pattern=r"^(simple|cross_encoder)$")
     rerank_model_dir: str = "../models/bge-reranker-v2-m3"
@@ -59,14 +58,9 @@ class Settings(BaseSettings):
     # 크로스 인코더 점수가 (0~1)가 이 값에 못미치면 근거부족. 
     rerank_threshold: float = Field(default=0.2, ge=0.0, le=1.0)
 
-# 추가 
-    # --- 검색 -----------------------------------------------------------
-    retrieval_threshold: float = Field(default=0.55, ge=0.0, le=1.0) # 임계값. 점수를 넘지 못하면 근거 부족 
-    retrieval_top_k: int = Field(default=12, ge=1, le=100)  # 벡터 검색이 받아올 후보 갯수 
-    # 아래 두 줄 추가 
-    multi_query_n: int = Field(default=3, ge=1, le=10) # 질문을 몇 갈래까지 늘리는가   
-    rerank_top_n: int = Field(default=3, ge=1, le=20) # 다시 줄 세운 뒤 몇 건을 남길 것인가
-
+    # 모델 미리 로딩 
+    warn_up_models: bool = True 
+    
 
     # live 모드인지 확인 -> settings.is_live => True/Fase 
     @property
@@ -83,4 +77,3 @@ def mask(secret: str | None, keep: int = 8) -> str:
     if not secret:
         return "(없음)"
     return f"{secret[:keep]}...({len(secret)}자)"
-

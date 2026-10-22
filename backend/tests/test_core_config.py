@@ -7,3 +7,4 @@ def test_settings_has_defaults() -> None:
     settings = get_settings()
     assert settings.app_mode == "mock"
     assert settings.debug is False
+

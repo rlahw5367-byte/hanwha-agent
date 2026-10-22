@@ -44,8 +44,7 @@ def test_parse_pdf_returns_no_blocks_for_scanned_file() -> None:
     assert doc.page_count == 1
     assert doc.table_count == 0 
 
-
-
+#-------------------------------
 from app.core.exceptions import ValidationFailed
 from app.rag.local_parsers import parse_local
 

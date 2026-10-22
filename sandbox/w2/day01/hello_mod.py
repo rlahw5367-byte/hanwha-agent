@@ -1,1 +1,3 @@
-MESSAGE = '나는 sandbox/w2/day01 안에 있다.'
+MESSAGE = '나는 sandbox/w2/day01안에있다'
+
+

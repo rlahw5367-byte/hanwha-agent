@@ -20,7 +20,7 @@ def check_question(text: str) -> str:
     if len(q) > settings.max_input_chars:
         raise GuardTripped(
             f"질문이 너무 깁니다 ({len(q)}자)."
-            f"{settings.max_input_chars}자 이낼로 줄여주세요."
+            f"{settings.max_input_chars}자 이내로 줄여주세요."
         )
     return q # 공백 제거후 통과한 질문 리턴 
 

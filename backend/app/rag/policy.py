@@ -14,7 +14,7 @@ class SearchPolicy:
     current_only: bool = True               # 현행 버전만 검색 대상에 넣는다 
     allow_past_on_request: bool = True      # 사용자가 명시하면 이전 버전도 검색한다 
     respect_clearance: bool = True          # 보안 등급으로 문서를 거른다 
-    threshold: float = 0.55                 # 이 점수에 못 미치면 '근거 부족'이다 
+    threshold: float = 0.60                 # 이 점수에 못 미치면 '근거 부족'이다 
 
 
 # 아무 조건이 없으면 사용하는 기본 정책
@@ -34,13 +34,11 @@ def version_allowed(version_status: str, *, policy: SearchPolicy, question: str)
         return True
     return policy.allow_past_on_request and wants_past_version(question)
 
-
 # 보안 등급 확인하기 
 def clearance_allowed(user_clearance: str, doc_level: str, *, policy: SearchPolicy) -> bool:
     if not policy.respect_clearance:
         return True
     return CLEARANCE.get(user_clearance, 1) >= CLEARANCE.get(doc_level, 1)
-
 
 # 검색 결과를 정책으로 거르기, 통과한 것과 왜 걸렀는지 사유를 함께 돌려주기 
 def filter_candidates(rows: list[dict], *, user: dict, 
@@ -58,3 +56,5 @@ def filter_candidates(rows: list[dict], *, user: dict,
         kept.append(row)
 
     return kept, reason 
+
+

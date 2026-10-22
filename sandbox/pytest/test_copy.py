@@ -1,5 +1,3 @@
-#sandbox/pytest/test_copy.py
-
 def test_제목이_있다():
     문서 = {"doc_id": "DOC-HR-014", "title": "국내출장 여비 규정", "security_level": "일반"}
     assert 문서["title"]

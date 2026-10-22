@@ -40,16 +40,13 @@ def _explain(status: int | None) -> str:
 
 # 상용 문서 파서 어댑터.
 class UpstageParser:
-    
     name = "upstage"
-
     # 파일 하나 상용 파서에 보내 ParsedDoc 으로 리턴 
     def parse(self, path: str) -> ParsedDoc:
         p = Path(path)
         if not p.exists():
             raise ExternalServiceError(f"파일을 찾을 수 없습니다: {path}")
         return _to_doc(p, _post(p))
-
 
 # 파일을 멀티파트로 보내고 응답을 JSON으로 리턴 
 def _post(p: Path) -> dict:
@@ -78,7 +75,6 @@ def _post(p: Path) -> dict:
 
     return response.json() 
 
- 
 # 응답의 elements를 ParsedBlock 리스트로 변경 -> ParsedDoc으로 리턴 
 def _to_doc(p: Path, payload: dict) -> ParsedDoc:
     blocks: list[ParsedBlock] = []
@@ -101,8 +97,8 @@ def _to_doc(p: Path, payload: dict) -> ParsedDoc:
     log.info("상용 파싱 완료: %s, 블록 %d, 표 %d", p.name, len(blocks), tables)
     return ParsedDoc(blocks=blocks, page_count=pages, table_count=tables)
 
+# -------- 임베딩 ----------------------------------------
 
-# -------- 임베딩 추가 ----------------------------------------
 EMBED_TIMEOUT = 60.0 
 EMBED_BATCH = 50 
 
@@ -145,3 +141,4 @@ class UpstageEmbedder:
 
     def embed_query(self, text: str) -> list[float]:
         return self._embed([text], "query")[0] 
+

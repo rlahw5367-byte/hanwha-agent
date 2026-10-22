@@ -29,21 +29,21 @@ class AnswerOut(BaseModel):
     sources: list[AnswerSource] = Field(description="답변이 인용한 근거 목록")
     enough_evidence: bool = Field(description="근거가 충분했는가. 부족하면 False")
 
-# 재시도/폴백 관련 정보 추가 : 라우터가 사용자에게 돌려주는 최종 응답 객체 
-class AskOut(AnswerOut):
-    run_id: str = Field(description="이 질문 한 건의 실행 번호.예: RUN-1234")
-    steps: list[dict] = Field(default_factory=list, description="검색 과정 단계 목록")
-    attempts: int = Field(default=1, description="스키마 검증에 성공하기까지 부른 횟수")
-    fallback_used: bool = Field(
-        default=False, 
-        description="세 번 모두 실패해 폴백 답변으로 대처한 여부"
-    )
 
 # 도구가 만든 문서 초안 한 건 
 class DraftOut(BaseModel):
     doc_type: str = Field(description="문서 양식 이름. 예: 국내출장 신청서")
     fields: dict[str, str] = Field(description="양식의 칸과 값. 값은 모두 문자열")
     body: str = Field(description="문서 초안 전문")
+
+# 외부 전송하는 도구가 실제로 돌려준 결과물 
+class SentOut(BaseModel):
+    ok: bool = Field(description="Slack이 전송되었는지")
+    channel: str = Field(default="", description="보낸 채널. ID로 올 수 있다")
+    ts: str = Field(default="", description="메세지 식별자")
+    error: str | None = Field(default=None, description="실패 이유")
+    simulated: bool = Field(default=False, description="전송하지 않았으면 True") 
+
 
 # 재시도/폴백 관련 정보 추가 : 라우터가 사용자에게 돌려주는 최종 응답 객체 
 class AskOut(AnswerOut):
@@ -55,3 +55,4 @@ class AskOut(AnswerOut):
         description="세 번 모두 실패해 폴백 답변으로 대처한 여부"
     )
     draft: DraftOut | None = Field(default=None, description="도구가 만든 문서 초안. 없으면 null")
+    sent: SentOut | None = Field(default=None, description="전송하는 도구의 실제 경롸. 막혔으면 null")

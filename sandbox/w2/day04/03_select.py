@@ -41,8 +41,7 @@ if __name__ == "__main__":
     main() 
 
 
-
-'''
-...hanhwa-agent\sandbox\w2\day04 에서 실행
-python -m 03_select
-'''
+"""
+...hanwha-agent\sandbox\w2\day04> 에서 실행 
+python -m 03_select 
+"""

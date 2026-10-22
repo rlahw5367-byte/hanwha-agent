@@ -3,7 +3,7 @@ import uuid
 import logging
 from typing import Annotated
 from fastapi import Depends, Request
-from collections.abc import Iterator  # 반복자
+from collections.abc import Iterator # 반복자 
 from sqlalchemy.orm import Session
 
 from app.core.config import Settings, get_settings
@@ -30,11 +30,12 @@ def get_request_logger(request_id: RequestIdDep) -> logging.Logger:
 LoggerDep = Annotated[logging.Logger, Depends(get_request_logger)]
 
 # 요청 하나가 사용할 데이터베이스 세션
-def get_db() -> Iterator [Session]:
+def get_db() -> Iterator[Session]:
     db = get_sessionmaker()()
-    try: 
+    try:
         yield db
     finally:
         db.close()
 
 SessionDep = Annotated[Session, Depends(get_db)]
+

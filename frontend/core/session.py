@@ -8,7 +8,7 @@ DEFAULTS: dict = {
     "user": None,
     "f_dept": "전체",
     "f_level": "전체",
-    "f_status": "전체",
+    "f_status": "현행",
     "f_q": "",
 }
 
@@ -17,6 +17,9 @@ def init_state() -> None:
     for key, value in DEFAULTS.items():
         # 화면 리런되어도 데이터 유지되는 변수들 초기화 
         st.session_state.setdefault(key, value)
+    # 필터 값을 화면 이동 되어도 남도록 기록. 
+    for key in ("f_dept", "f_level", "f_status", "f_q"):
+        st.session_state[key] = st.session_state[key]
 
 # 현재 사용자 정보 조회 : 로그인 -> 사용자 정보 , 비 로그인 -> None
 def current_user() -> dict | None:
@@ -42,3 +45,4 @@ def logout() -> None:
 def emp_no() -> str | None:
     user = current_user() 
     return user["emp_no"] if user else None
+

@@ -55,8 +55,10 @@ def build_result_chain(
     # ChatPromptTemplate -> LLMResult 연결 다리  
     def call_port(value) -> LLMResult:
         messages = value.to_messages()
-        question = "\n\n".join(str(m.content) for m in messages)
-        return llm.answer(question=question, contexts=port_contexts, user=port_user)
+        question = str(messages[-1].content) 
+        if system_prompt is None:
+            return llm.answer(question=question, contexts=port_contexts, user=port_user)
+        return llm.answer(question=question, contexts=port_contexts, user=port_user, system=str(messages[0].content))
 
     llm_step = RunnableLambda(call_port).with_config(run_name="LLMPort")
 
@@ -74,3 +76,5 @@ def build_parsed_chain(llm: LLMPort, *, schema: type, **kwargs) -> Runnable:
     base = kwargs.pop("system_prompt", None) or load_prompt("answer_system")
     system_prompt = f"{base}\n\n{parser.get_format_instructions()}"
     return build_answer_chain(llm, system_prompt=system_prompt, **kwargs) | parser
+
+

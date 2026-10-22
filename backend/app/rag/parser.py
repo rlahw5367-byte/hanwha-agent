@@ -14,7 +14,7 @@ _HTML = {".html", ".htm"}
 
 _LOCAL_ONLY = {".hwp", ".hwpx"}
 
-
+# 파일 한건 읽어서 형식과 무관한 한가지 모양으로 리턴해주는 함수 
 def parse(path: str | Path, *, use_upstage: bool = False) -> ParsedDoc:
     p = Path(path)
     ext = p.suffix.lower()
@@ -44,7 +44,6 @@ def _parse_plain(p: Path) -> ParsedDoc:
 
 
 def _read_text(p: Path) -> str:  
-    
     raw = p.read_bytes()
     for enc in ("utf-8-sig", "cp949"):
         try:
@@ -55,7 +54,7 @@ def _read_text(p: Path) -> str:
             log.info("인코딩을 %s 로 읽었습니다: %s", enc, p.name)
         return text
     log.warning("인코딩을 알 수 없어 글자를 바꿔 읽었습니다: %s", p.name)
-    return raw.decode("utf-8", errors="replace")  # ◀ 추가 끝
+    return raw.decode("utf-8", errors="replace") 
 
 
 def _parse_markdown(p: Path) -> ParsedDoc: 

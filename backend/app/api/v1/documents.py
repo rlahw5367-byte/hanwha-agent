@@ -5,7 +5,7 @@ import shutil
 from datetime import date
 from pathlib import Path
 
-from app.schemas.document import DocumentOut, DocumentCreateOut, JobOut, VersionOut   #  추가 
+from app.schemas.document import DocumentOut, DocumentCreateOut, JobOut, VersionOut
 from app.api.v1.deps import LoggerDep
 from app.core.exceptions import ValidationFailed
 from app.services import document_service
@@ -18,7 +18,6 @@ router = APIRouter(
 
 # 파일 업로드될 경로 지정 
 UPLOAD_DIR = Path("uploads")
-
 ALLOWED_EXTS = {".docx", ".pdf"}
 
 
@@ -87,14 +86,14 @@ def upload_document(
         file_path=dest.as_posix(),
         file_format=ext.lstrip("."),
     )
-    # 수정+추가 
+    # document_service.ingest_document(doc_id=doc_id, version=version, path=dest.as_posix())
     job_id = document_service.start_ingest_job(doc_id=doc_id, version=version, path=dest.as_posix())
     background.add_task(document_service.run_ingest_job, job_id)
 
     return {**result, "job_id": job_id}
 
 
-# 추가 : 업로드 작업 하나의 진행 상태 정보 요청 처리해주는 매핑 
+# 업로드 작업 하나의 진행 상태 정보 요청 처리해주는 매핑 
 @router.get("/jobs/{job_id}", response_model=JobOut)
 def read_job(job_id: str) -> dict:
     return document_service.get_job(job_id) 
@@ -115,3 +114,4 @@ def reindex_version(doc_id: str, version: str, background: BackgroundTasks) -> d
     job_id = document_service.start_reindex_job(doc_id=doc_id, version=version)
     background.add_task(document_service.run_ingest_job, job_id)
     return document_service.get_job(job_id) 
+

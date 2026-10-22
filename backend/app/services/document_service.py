@@ -213,8 +213,8 @@ def run_ingest_job(job_id: str) -> None:
         steps[2]['time'] = f"표 {result['tables']}개"
         steps[3]['time'] = f"{result['chunks']}청크"
         steps[4]['time'] = f"{result['vectors']}벡터"
-        steps[5]['time'] = "현행 지정 완료"   # 추가 
-        job['progress'] = int(6 / len(steps) * 100)  # 수정 
+        steps[5]['time'] = "현행 지정 완료"
+        job['progress'] = int(6 / len(steps) * 100)
         job['chunk_count'] = result['chunks']
         job['message'] = result['summary']
         job['status'] = '완료'
@@ -234,7 +234,6 @@ def start_reindex_job(*, doc_id: str, version: str) -> str:
         dv.index_status = "재임베딩"
         dv.index_progress = 0 
     return start_ingest_job(doc_id=doc_id, version=version, path=path)
-
 
 
 

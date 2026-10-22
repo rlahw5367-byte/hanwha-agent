@@ -13,3 +13,4 @@ class Draft(Base, TimestampMixin):
     doc_type: Mapped[str] = mapped_column(String(32))
     fields: Mapped[dict] = mapped_column(JSON)
     body: Mapped[str] = mapped_column(Text)
+    

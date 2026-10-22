@@ -12,3 +12,4 @@ def verify_password(raw: str, hashed: str) -> bool:
         return bcrypt.checkpw(raw.encode("utf-8"), hashed.encode("utf-8"))
     except (ValueError, TypeError):
         return False
+

@@ -6,7 +6,7 @@ import re
 
 from app.core.config import get_settings
 
-_TOKEN = re.compile(r"[가-힣A-Za-z0-9]+")   # 뒤에 + 추가 
+_TOKEN = re.compile(r"[가-힣A-Za-z0-9]+")
 
 # 글을 두 글자 이상인 낱말의 집합(중복제거)으로 변경 해주는 함수 
 def _tokens(text: str) -> set[str]:
@@ -62,8 +62,16 @@ def rerank(query: str, candidates: list[dict], top_n: int = 3,
 def judge_gate(rows: list[dict]) -> tuple[float, float, bool]:
     settings = get_settings() 
     if any(r.get("rerank_by") == "cross_encoder" for r in rows):
-        best = max((float(r.get("rerank_score", 0.0)) for r in rows) , default=0.0)   # 수정 
-        threshold = settings.rerank_threshold    # 수정 
+        best = max((float(r.get("rerank_score", 0.0)) for r in rows) , default=0.0)
+        threshold = settings.rerank_threshold
+    else: 
+        best = max((float(r.get("score", 0.0)) for r in rows), default=0.0)
+        threshold = settings.retrieval_threshold
 
-    return best, threshold, best >= threshold
+    return (best, threshold, best >= threshold)
+
+
+
+
+
 

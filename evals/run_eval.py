@@ -19,6 +19,7 @@ from app.integrations.factory import get_embedder
 from app.models import EvalRun
 from app.rag import policy, store
 from app.rag.retriever import LiveRetriever  
+from app.rag.reranker import judge_gate
 
 settings = get_settings() 
 GOLDEN = Path(__file__).parent / "golden_set.yaml"
@@ -30,6 +31,8 @@ CONFIGS = [
     {"name": "기본 검색"},
     {"name": "+ Multi-Query", "multi_query": True},
     {"name": "+ 하이브리드", "multi_query": True, "hybrid": True},
+    {"name": "+ 리랭킹", "multi_query": True, "hybrid": True, "rerank": True, "reranker": "simple"},
+    {"name": "+ 크로스 인코더", "multi_query": True, "hybrid": True, "rerank": True, "reranker": "cross_encoder"},
 ]
 
 # 관리자 시각으로 테스트 
@@ -39,7 +42,8 @@ EVAL_USER = {"id": "2011-0003", "name":"한서영", "clearance": "대외비", "d
 # 질문 하나로 후보를 뽑고 정책으로 거른 뒤, 상위 N건만 남기는 함수 
 def retrieve(session, question: str, top_n: int, cfg: dict | None = None) -> list[dict]:
     if (cfg or {}).get("multi_query"): 
-        result = LiveRetriever().search(question=question, user=EVAL_USER, session=session, hybrid=bool(cfg.get("hybrid")))
+        result = LiveRetriever().search(question=question, user=EVAL_USER, session=session, hybrid=bool(cfg.get("hybrid")),
+                                        rerank_on=bool(cfg.get("rerank")), reranker=cfg.get("reranker"))
         return result.sources[:top_n] 
 
     embedder = get_embedder()
@@ -48,8 +52,9 @@ def retrieve(session, question: str, top_n: int, cfg: dict | None = None) -> lis
     return kept[:top_n] 
 
 # 문항 한개를 채점하는 함수 
-def judge(item: dict, hits: list[dict], threshold: float) -> tuple[bool, str]:
-    best = max((h["score"] for h in hits), default=0.0)
+def judge(item: dict, hits: list[dict]) -> tuple[bool, str]:
+
+    best, threshold, _ = judge_gate(hits)
     if item.get("unanswerable"):
         ok = best < threshold
         return ok, "근거 부족 정상" if ok else f"임계값 초과({best:.2f}) - 지어낼 위험"
@@ -77,7 +82,7 @@ def run_config(cfg: dict, items: list[dict], top_n: int) -> dict:
     with session_scope() as session:
         for item in items:
             hits = retrieve(session, item["question"], top_n, cfg)
-            ok, why = judge(item, hits, settings.retrieval_threshold)
+            ok, why = judge(item, hits)
             results.append({"id": item["id"], "type": item.get("type",""), 
                             "question": item["question"], "ok": ok, "why": why})
 
@@ -121,7 +126,8 @@ def main() -> int:
         print(f" 알 수없는 설정 : {args.config}")
         return 1 
 
-    print(f"\n 문항 {len(items)}개. 임계값 {settings.retrieval_threshold}. 상위 {args.top_n}건\n")
+    print(f"\n 문항 {len(items)}개. 임계값 벡터 {settings.retrieval_threshold}. "
+          f"크로스 인코더 {settings.rerank_threshold}. 상위 {args.top_n}건\n")
     runs = []
     for cfg in configs:
         run = run_config(cfg, items, args.top_n)
@@ -133,7 +139,8 @@ def main() -> int:
         print() 
 
     report = {"measured_at" : datetime.now().isoformat(timespec="seconds"), 
-              "threshold": settings.retrieval_threshold, "top_n": args.top_n, "runs": runs}
+              "threshold": settings.retrieval_threshold, "rerank_threshold": settings.rerank_threshold,
+                "top_n": args.top_n, "runs": runs}
 
     if not args.no_save:
         print(f"  리포트: {save(report)}\n")

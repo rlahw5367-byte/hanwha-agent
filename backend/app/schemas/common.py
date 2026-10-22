@@ -8,3 +8,4 @@ class ErrorOut(BaseModel):
     code: str
     message: str
     detail: str | None = None
+

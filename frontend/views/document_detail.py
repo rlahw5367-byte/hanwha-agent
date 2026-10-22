@@ -73,7 +73,7 @@ def _policy_card() -> None:
         ("현행 버전만 기본 검색", badge_html("ON", "ok")),
         ("사용자 요청 시 과거 버전 조회", badge_html("ON", "ok")),
         ("보안등급 필터", badge_html("ON", "ok")),
-        ("유사도 임계값", badge_html("0.55", "neutral")),
+        ("판정 합격선", badge_html("크로스 인코더 0.2 · 벡터 0.60", "neutral")), # 수정 
     ]
     body = "".join(
         '<div style="display:flex;justify-content:space-between;align-items:center;'
@@ -82,7 +82,7 @@ def _policy_card() -> None:
         for label, chip in rows
     )
     card(body)
-    st.caption("값은 backend/app/rag/policy.py 의 SearchPolicy 가 정합니다.")
+    st.caption("값은 backend/app/rag/policy.py 의 SearchPolicy 와 .env의 합격선이 정합니다.")
 
 
 # 작업 버튼 그리기. 

@@ -7,7 +7,7 @@ from app.integrations.ports import ParsedBlock, ParsedDoc
 
 log = get_logger(__name__)
 
-
+# PDF 적재 시, 표를 따로 떼어 읽을지 판단 하는 함수 : .env PDF_TABLES 값으로 판단 
 def pdf_tables_on() -> bool: 
     import os
 
@@ -18,13 +18,12 @@ def pdf_tables_on() -> bool:
         raw = dotenv_values(".env").get("PDF_TABLES")  
     return str(raw or "").strip().lower() in ("1", "true", "yes", "on")  
 
-
+# 일반 텍스트 읽기 (표 X)
 def parse_pdf(path: Path) -> ParsedDoc:
     from pypdf import PdfReader
 
     reader = PdfReader(str(path))
     blocks: list[ParsedBlock] = []
-
 
     for page_no, page in enumerate(reader.pages, 1):
         text = (page.extract_text() or "").strip()
@@ -35,7 +34,7 @@ def parse_pdf(path: Path) -> ParsedDoc:
 
     return ParsedDoc(blocks=blocks, page_count=len(reader.pages), table_count=0)
 
-
+# DOCX 파싱 
 def parse_docx(path: Path) -> ParsedDoc:
     from docx import Document
     from docx.table import Table
@@ -64,7 +63,7 @@ def parse_docx(path: Path) -> ParsedDoc:
 
     return ParsedDoc(blocks=blocks, page_count=1, table_count=tables)
 
-
+# 표 -> 마크다운으로 변환 
 def _table_to_markdown(headers: list[str], rows: list[list[str]]) -> str:
     head = "| " + " | ".join(headers) + " |"
     sep = "|" + "---|" * len(headers)
@@ -72,13 +71,14 @@ def _table_to_markdown(headers: list[str], rows: list[list[str]]) -> str:
     return "\n".join([head, sep, *body])
 
 
+# 표 한칸을 마크다운 표에 넣어도 되는 한 줄 글자로 변경 
 def _cell(value) -> str:
     if value is None:
         return ""
-    text = " ".join(str(value).split())    
-    return text.replace("|", "\\|")   
+    text = " ".join(str(value).split())       
+    return text.replace("|", "\\|")
 
-
+# 엑셀 시트의 값을 행 목록으로 읽기, 병합 셀은 왼쪽 위 값으로 체운다. 
 def _fill_merged(ws) -> list[list]:
     grid = [list(row) for row in ws.iter_rows(values_only=True)]
     if not grid:
@@ -91,14 +91,14 @@ def _fill_merged(ws) -> list[list]:
                 grid[r - r0][c - c0] = top_left
     return grid
 
-
+# 슬라이드의 표 도형하나를 마크다운으로 변경 
 def _pptx_table(shape) -> str:
     rows = [[_cell(cell.text) for cell in row.cells] for row in shape.table.rows]
     if not any(any(row) for row in rows):
         return ""
     return _table_to_markdown(rows[0], rows[1:])
 
-
+# 계산값이 없는(None) 칸에 수식이 있으면 '수식 (계산값 없음)' 글자로 넣어주기 
 def _fill_formulas(grid: list[list], ws, ws_formula) -> list[list]:
     r0, c0 = ws.min_row, ws.min_column
     for i, row in enumerate(grid):
@@ -110,24 +110,23 @@ def _fill_formulas(grid: list[list], ws, ws_formula) -> list[list]:
                 row[j] = f"{formula} (계산값 없음)"
     return grid
 
-
+# 시트에 표 여러개 있을때, 시트 한장을 값이 하나도 없는 행에서 잘라서 표 덩어리 목록으로 만들기 
 def _split_regions(grid: list[list], first_row: int) -> list[tuple[int, list[list]]]:
-
     regions: list[tuple[int, list[list]]] = []
     for i, row in enumerate(grid):
         if all(c is None for c in row):
             continue
         if regions and regions[-1][0] + len(regions[-1][1]) == first_row + i:
-            regions[-1][1].append(row)                 
+            regions[-1][1].append(row)                  # 바로 위 행에 이어지게 
         else:
-            regions.append((first_row + i, [row]))     
+            regions.append((first_row + i, [row]))      # 빈 행 뒤 -> 새 덩어리 
     if len(regions) > 1:
         for _, rows in regions:
             width = max(max((j + 1 for j, c in enumerate(r) if c is not None), default=0) for r in rows)
             rows[:] = [r[:width] for r in rows]
     return regions
 
-
+# 표 덩어리 하나를 마크다운으로 변경 
 def _xlsx_table(ws, top: int, rows: list[list[str]]) -> str:
     def merged_across(row_no: int) -> bool:
         return any(r.min_row == row_no and r.max_col > r.min_col for r in ws.merged_cells.ranges)
@@ -143,7 +142,7 @@ def _xlsx_table(ws, top: int, rows: list[list[str]]) -> str:
     table = _table_to_markdown(header, body)
     return f"{title}\n\n{table}" if title else table
 
-
+# 슬라이드의 도형을 하나씩 리턴하는 함수 
 def _walk_shapes(shapes):
     from pptx.shapes.group import GroupShape
 
@@ -153,7 +152,7 @@ def _walk_shapes(shapes):
         else:
             yield shape
 
-
+# 슬라이드의 차트 하나를 '항목 x 계열' 마크다운 표로 변경
 def _pptx_chart(shape) -> str:
     chart = shape.chart
     try:
@@ -174,7 +173,7 @@ def _pptx_chart(shape) -> str:
     title = chart.chart_title.text_frame.text.strip() if chart.has_title else ""
     return f"{title}\n\n{table}" if title else table
 
-
+# PDF를 pdfplumber로 파싱 -> 텍스트, 표 O
 def parse_pdf_tables(path: Path) -> ParsedDoc:
     import pdfplumber
 
@@ -207,7 +206,7 @@ def parse_pdf_tables(path: Path) -> ParsedDoc:
 
     return ParsedDoc(blocks=blocks, page_count=page_count, table_count=n_tables) 
 
-
+# 한글 파일 파싱 
 def parse_hwpx(path: Path) -> ParsedDoc:
     import re
     import zipfile
@@ -247,6 +246,7 @@ def parse_hwpx(path: Path) -> ParsedDoc:
     return ParsedDoc(blocks=blocks, page_count=1, table_count=tables)
 
 
+# 엑셀 파싱 
 def parse_xlsx(path: Path) -> ParsedDoc:
     from openpyxl import load_workbook
 
@@ -255,18 +255,18 @@ def parse_xlsx(path: Path) -> ParsedDoc:
     blocks: list[ParsedBlock] = []
 
     for ws in wb.worksheets:
-        grid = _fill_formulas(_fill_merged(ws), ws, wb_formula[ws.title])
-        regions = _split_regions(grid, ws.min_row)
+        grid = _fill_formulas(_fill_merged(ws), ws, wb_formula[ws.title]) # 수식 처리 
+        regions = _split_regions(grid, ws.min_row) # 여러 표 
         for k, (top, region) in enumerate(regions, 1):
             rows = [["" if c is None else str(c) for c in row] for row in region]
             locator = ws.title if len(regions) == 1 else f"{ws.title} · 표{k}"
-            blocks.append(ParsedBlock("표", locator, _xlsx_table(ws, top, rows)))  # ◀ 추가 끝
+            blocks.append(ParsedBlock("표", locator, _xlsx_table(ws, top, rows)))  
 
     return ParsedDoc(
         blocks=blocks, page_count=len(wb.worksheets), table_count=len(blocks)
     )
 
-
+# PPTX 파싱 
 def parse_pptx(path: Path) -> ParsedDoc:
     from pptx import Presentation
 
@@ -313,6 +313,7 @@ HANDLERS = {
     ".pptx": parse_pptx,
 }
 
+# 확장자를 보고 알맞은 파서로 넘겨주는 진입점 
 def parse_local(path: str | Path) -> ParsedDoc | None:
     from app.core.exceptions import ValidationFailed
 

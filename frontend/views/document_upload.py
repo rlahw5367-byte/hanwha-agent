@@ -11,7 +11,6 @@ DEPTS = {'HR': '경영지원팀', 'HRGA': '인사총무', 'INFRA2': '인프라�
 LEVELS = ['일반', '3급', '대외비']
 ACCEPT = ['docx', 'pdf']
 
-# 화면 그리기 함수 
 def render() -> None:
     page_header("문서 업로드", crumb="문서 관리 > 업로드", subtitle="DOCX · PDF 를 파싱해 조항 단위와 표 단위로 나눠 저장합니다. ")
     if st.button("← 문서 관리"):
@@ -23,13 +22,12 @@ def render() -> None:
     else:
         _render_form()  # 업로드 폼페이지 화면 
 
-
 # 문서 등록 폼 화면 그리기 
 def _render_form() -> None:
     up = st.file_uploader('파일을 끌어다 놓으세요', type=ACCEPT)
     doc_id = st.text_input('문서번호', value='DOC-FI-009')
     title = st.text_input('문서명', value='법인카드 사용 지침')
-    version = st.text_input('판 번호', value='v1.4')
+    version = st.text_input('버전 번호', value='v1.4')
     effective_from = st.text_input('시행일', value='2025-07-01')
     dept_id = st.selectbox('소관 부서', options=list(DEPTS), format_func=DEPTS.get)
     security_level = st.selectbox('보안등급', options=LEVELS)
@@ -42,8 +40,7 @@ def _render_form() -> None:
         st.session_state['upload_job'] = res['job_id']
         st.rerun()
     st.caption('현행/만료를 고르는 일은 금주 버전 관리 챕터에서 진행할 예정입니다.')
-    
-    
+
 # 1초에 한번씩 요청, 업로드 진행 되는 화면 그리기. 업로드 완료되면 멈추기 
 def _render_progress(job_id: str) -> None:
     try:

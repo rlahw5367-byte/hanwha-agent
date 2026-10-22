@@ -15,7 +15,7 @@ class LLMResult:
     latency_ms: int = 0 
     extras: dict = field(default_factory=dict) # 화면에 필요한 여분 데이터를 실어 보내기 
 
-# 추가 : 도구 호출 한건에 대한 정보를 담는 클래스 
+# 도구 호출 한건에 대한 정보를 담는 클래스 
 @dataclass
 class ToolCall:
     id: str          # 호출 번호 
@@ -27,9 +27,10 @@ class ToolCall:
 @runtime_checkable
 class LLMPort(Protocol):
     # 단순 답변 
-    def answer(self, *, question: str, contexts: list[dict], user: dict) -> LLMResult: ...
-    # 추가 : 도구 목록 전달해 모델 1회 호출 
+    def answer(self, *, question: str, contexts: list[dict], user: dict, system: str | None = None) -> LLMResult: ...
+    # 도구 목록 전달해 모델 1회 호출 
     def answer_with_tools(self, *, messages: list[dict], tools: list[dict], user: dict) -> LLMResult: ...
+
 
 #----------- 문서 파싱 결과 -----------------------------------------------
 # 파싱 결과의 최소 단위. 문서를 잘라놓은 덩어리 하나 : PDF, DOCX, HWPX  
@@ -38,16 +39,6 @@ class ParsedBlock:
     kind: str            # 덩어리 종류 : 조항, 표 
     locator: str         # 원본 어디서 나온 덩어리 인지  : p.6, 표2
     text: str            # 덩어리 글자들 
-
-# 추가 : 검색 결과 담는 객체 
-@dataclass
-class RetrievalResult: 
-    sources: list[dict] = field(default_factory=list)  
-    steps: list[dict] = field(default_factory=list)
-    best_score: float = 0.0
-    passed: bool = False
-    version_note: str | None = None
-    threshold: float = 0.55
 
 # 문서 한건을 파싱한 결과 전체 
 @dataclass
@@ -61,12 +52,27 @@ class ParsedDoc:
 class ParserPort(Protocol):
     def parse(self, path: str) -> ParsedDoc: ... 
 
-# 임베딩 어댑터가 지켜야할 규칙 : 추가 
+
+# 검색 결과 담는 객체 
+@dataclass
+class RetrievalResult: 
+    sources: list[dict] = field(default_factory=list)   # 근거 후보 목록 
+    steps: list[dict] = field(default_factory=list)     # 화면의 검색 과정 보여줄때 사용 
+    best_score: float = 0.0                             # 후보 중 가장 높은 유사도 
+    passed: bool = False                                # 최고 점수가 임계값을 넘었는가?
+    version_note: str | None = None                     # 만료된 문서버전을 걸렀을때 사용자에게 알려줄 노트 
+    threshold: float = 0.55                             # 임계값 
+
+
+
+# ------------ 임베딩 -------------------------------
+# 임베딩 어댑터가 지켜야할 규칙 
 @runtime_checkable
 class EmbedderPort(Protocol):
     dim: int 
     def embed_documents(self, texts: list[str]) -> list[list[float]]: ...
     def embed_query(self, text: str) -> list[float]: ...
+
 
 # ----------- 크로스 인코더 -------------------------
 # 크로스 인코더 어댑터가 지켜야할 규약 
@@ -74,3 +80,19 @@ class EmbedderPort(Protocol):
 class RerankerPort(Protocol):
     name: str
     def score_pairs(self, query: str, texts: list[str]) -> list[float]: ...
+
+
+# ---------- 슬랙 -----------------------------------
+# 보내는 쪽 규약 
+@dataclass
+class SlackResult:
+    ok: bool 
+    channel: str = ""
+    ts: str = ""                # 메세지 식별자 
+    error: str | None = None
+    simulated: bool = False     # 보내지 않았으면 True
+
+# 보내는 업댑터 규약 
+@runtime_checkable
+class SlackPort(Protocol):
+    def post(self, *, channel: str, text: str) -> SlackResult: ...

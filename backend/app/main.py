@@ -1,21 +1,20 @@
 from __future__ import annotations
 
-import time # 추가 
+import time 
 
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse 
 from app.api.v1 import auth, documents, chat, ops
-from app.core.config import get_settings # 추가 
+from app.core.config import get_settings
 from app.core.exceptions import AgentError
 from contextlib import asynccontextmanager
-from app.core.logging import setup_logging, get_logger # 추가 
+from app.core.logging import setup_logging, get_logger
 from fastapi.exceptions import RequestValidationError
-from app.integrations import factory # 추가 
+from app.integrations import factory
 
-# 추가 
 log = get_logger(__name__)
 
-# 추가 : 서버 스타트 시, 로컬 모델 미리 열어두기 
+# 서버 스타트 시, 로컬 모델 미리 열어두기 
 def _warn_up_models() -> None:
     settings = get_settings()
     if not settings.warn_up_models:
@@ -36,8 +35,8 @@ def _warn_up_models() -> None:
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     setup_logging() 
-    _warn_up_models()   # 추가 
-    yield 
+    _warn_up_models()
+    yield
 
 # FastAPI 앱 생성 
 app = FastAPI(
@@ -64,11 +63,11 @@ app.include_router(
     chat.router,
     prefix="/api/v1"
 )
-# 추가 
 app.include_router(
     ops.router,
     prefix="/api/v1"
 )
+
 
 ## 예외 핸들러
 @app.exception_handler(AgentError)
@@ -85,7 +84,6 @@ async def handle_agent_error(
         }
     )
 
-# 사번 입력 안하고 로그인시 비번 로그에 노출 -> 예외로 잡기 
 @app.exception_handler(RequestValidationError)
 async def handle_validation_error(request: Request, exc: RequestValidationError) -> JSONResponse:
     # exc.errors() 에는 사용자가 보낸 값이 통째로 들어 있다. 필드 이름만 돌려주고 값은 감춘다.
@@ -96,4 +94,3 @@ async def handle_validation_error(request: Request, exc: RequestValidationError)
         status_code=422,
         content={"code": "validation_failed", "message": f"입력값을 확인하세요 — {fields}", "detail": None},
     )
-

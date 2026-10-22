@@ -55,3 +55,5 @@ for i, q in enumerate(QUESTIONS, 1):
 
 n = len(QUESTIONS)
 print(f"\n규칙 기반 평균 {rule_total / n:.1f}갈래. 재작성 평균 {llm_total / n:.1f}갈래")
+
+

@@ -10,14 +10,14 @@ from pydantic import ValidationError
 from app.core.guards import check_question
 from app.core.logging import get_logger
 from app.core.config import get_settings
-from app.core.exceptions import NotFound
+from app.core.exceptions import NotFound, ApprovalRequired
 from app.db.session import session_scope
 from app.models import Run, UsageLog
 from app.services.ids import next_run_id
 from app.schemas.chat import AnswerOut, AskOut, AnswerSource
 from app.agent.chain import build_result_chain 
-from app.tools import search_documents 
-from app.tools import create_draft
+from app.tools import registry
+from app.agent.patterns import route, route_after_search, run_chain, run_parallel 
 
 
 log = get_logger(__name__)
@@ -90,11 +90,6 @@ def ask(*, question: str, run_id: str | None = None, user_id: int = 1) -> AskOut
 
     # 2. 어댑터 한 개. 
     llm = factory.get_llm() 
-
-    # 체인 생성 
-    chain = build_result_chain(llm, contexts=NO_CONTEXTS, user=DEFAULT_USER).with_retry(
-        stop_after_attempt=2
-    )
 
     from app.integrations.langfuse_client import score, trace
     from app.integrations.llm_claude import _extract_json 
@@ -200,14 +195,15 @@ def get_run(*, run_id: str) -> dict:
 # ----- 도구 루프 추가 -------------------------------------
 
 # 도구 호출 요청, 응답 왕복의 횟수 상한값
-MAX_TOOL_TURNS = 3 
+MAX_TOOL_TURNS = 4 
 
+# * 아래 두개 삭제 * 
 # 모델에게 전달하는 도구 정의 목록 
-TOOLS = [search_documents.SCHEMA, create_draft.SCHEMA]
+# TOOLS = [search_documents.SCHEMA, create_draft.SCHEMA]
 
 # 도구 이름 -> 실제로 실행하라 함수 
-TOOL_RUNNERS = {search_documents.NAME: search_documents.run, 
-                create_draft.NAME: create_draft.run} 
+# TOOL_RUNNERS = {search_documents.NAME: search_documents.run, 
+#                 create_draft.NAME: create_draft.run} 
 
 # 왕복 상한에 도달해 답변을 완성하지 못했을때의 문구 
 TOOL_LIMIT_ANSWER = "(도구 호출 상한에 닿아 답을 마치지 못했습니다)"
@@ -225,16 +221,22 @@ def ask_with_tools(*, question: str, run_id: str | None = None, user_id: int = 1
 
     user = {**DEFAULT_USER, "clearance": "일반"} # 임시 사용자 정보 
 
-    ours = {search_documents.NAME: {"user": user}, 
-            create_draft.NAME: {"user": user, "run_id": run_id}}
+    registry.load_all() 
+    tools = registry.all_tools() 
+    schemas = [t.schema for t in tools]
+    by_name = {t.name: t for t in tools} 
+
+    ours = {"search_documents": {"user": user}, 
+            "create_draft": {"user": user, "run_id": run_id}}
 
     messages: list[dict] = [{"role": "user", "content": q}]
     last_out: dict = {}    # 마지막 도구 실행 결과 
     made: dict | None = None # 초안 결과 따로 받기 
+    sent: dict | None = None # 슬랙 전송 결과 별도로 받기 
     text = TOOL_LIMIT_ANSWER  # 상한에 도달하면 이 문구가 남아있도록 초기화 
 
     for turn in range(1, MAX_TOOL_TURNS + 1):
-        result = llm.answer_with_tools(messages=messages, tools=TOOLS, user=user)
+        result = llm.answer_with_tools(messages=messages, tools=schemas, user=user)
         _record_usage(run_id, result) 
 
         calls = result.extras.get("tool_calls") or [] 
@@ -246,13 +248,19 @@ def ask_with_tools(*, question: str, run_id: str | None = None, user_id: int = 1
         messages.append({"role": "assistant", "content": result.extras["blocks"]})
         blocks = []
         for c in calls:
-            runner = TOOL_RUNNERS.get(c.name) 
-            out = runner(**c.args, **ours[c.name]) if runner else {"error": f"모르는 도구: {c.name}"}
+            tool = by_name.get(c.name)
 
-            if runner and c.name == create_draft.NAME:
+            try:
+                out = tool.run(**c.args, **ours.get(c.name, {})) if tool else {"error": f"모르는 도구: {c.name}"}
+            except ApprovalRequired as e:
+                out = {"error": str(e), "approval_required": True}
+            
+            if tool and c.name == "create_draft":
                 made = out 
-            elif runner:
+            elif tool and c.name == "search_documents":
                 last_out = out 
+            elif tool and c.name == "send_slack" and not out.get("approval_required"):
+                sent = out
 
             blocks.append({"type": "tool_result", "tool_use_id": c.id, 
                            "content": json.dumps(out, ensure_ascii=False, default=str)})
@@ -271,11 +279,33 @@ def ask_with_tools(*, question: str, run_id: str | None = None, user_id: int = 1
     out = AskOut(answer=text, sources=sources, run_id=run_id, attempts=turn,
                  enough_evidence=bool(last_out.get("passed")),
                  steps=last_out.get("steps", []), fallback_used=False, 
-                 draft=made if made and "body" in made else None)
+                 draft=made if made and "body" in made else None,
+                 sent=sent)
     _close_run(run_id, out, started)
     return out 
 
+# --- 워크 플로우 -------
+def _wf_search(state: dict) -> dict:
+    out = registry.get("search_documents").run(query=state["question"], user=state["user"])
+    return {"sources": out["sources"], "passed": out["passed"]}
 
+def _wf_found(state: dict) -> dict: 
+    tool = registry.get("get_document_versions")
+    ids = sorted({s["doc_id"] for s in state["sources"]})
+    return {"versions": run_parallel({d: (tool.run, {"doc_id": d}) for d in ids})}
+
+def _wf_insufficient(state: dict) -> dict:
+    return {"versions": {}, "note": FALLBACK_ANSWER}
+    
+def _wf_route(state: dict) -> dict: 
+    return route(state, route_after_search, {"found": _wf_found, "insufficient": _wf_insufficient})
+
+
+def run_workflow(*, question: str) -> dict:
+    q = check_question(question) 
+    registry.load_all() 
+    state = {"question": q, "user": {**DEFAULT_USER, "clearance": "일반"}}
+    return run_chain([_wf_search, _wf_route], state)
 
     
 

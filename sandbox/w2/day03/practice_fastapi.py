@@ -6,64 +6,7 @@ app = FastAPI(
     version="0.1.0"
 )
 
-# ---- 사용자 요청을 처리해줄 uri 매핑 함수들 -----
-# GET /health 
-@app.get("/health")
-def health() -> dict:
-    return {"status": "ok"}   # 리턴값이 요청에 응답해줄 데이터 
-
-# * 쿼리파라미터 *
-# ex. 문서 목록을 조회하는 함수 : http://127.0.0.1:8000/documents?dept=hr&limit=20
-#                                 http://127.0.0.1:8000/documents
-@app.get("/documents")
-def list_documents(
-    dept:str | None = None, 
-    limit: int = 20
-) -> dict:
-    return {
-        "dept": dept, 
-        "limit": limit
-    }
-
-# * 요청 범위 제한 *
-# ex. 문서 목록 조회시 범위 제한 주기 
-@app.get("/document-limited")
-def list_documenst_limited(
-    dept: str | None = None, 
-    limit: Annotated[int, Query(ge=1, le=100)] = 20
-) -> dict:
-    return {
-        "dept": dept,
-        "limit" : limit
-    }
-
-
-# * 경로 변수 * 
-# 고정 경로를 위에 배치 
-@app.get("/documents/latest")
-def get_document() -> dict: 
-    return {
-        "doc_id": "latest", 
-        "title" : "latest 문서 제목"
-    }
-
-# 경로 변수를 고정경로 아래에 배치 
-# ex. 특정 문서를 조회하는 함수 
-@app.get("/documents/{doc_id}")
-def get_document_path(doc_id: str) -> dict: 
-    return {
-        "doc_id": doc_id, 
-        "title" : f"{doc_id} 문서 제목"
-    }
-
-
-# ex. 타입 검증 - 레벨 조회 
-@app.get("/levels/{level}")
-def get_level(level: int) -> dict:
-    return {"level": level}
-
-
-
+# 임시 데이터 
 documents = [
     {
         "doc_id": "DOC-HR-014",
@@ -98,37 +41,91 @@ documents = [
         "status": "active",
     },
 ]
-
+# 요청 함수 
 @app.get("/practice/documents")
-def practice_documents(
+def search_documents(
     dept: str | None = None,
-    security_level: str | None = None,
-    file_format: str | None = None,
-    limit: Annotated[int, Query(ge=1, le=100)] = 20
+    security_level: str | None = None, 
+    file_format: str | None = None, 
+    limit: Annotated[int, Query(ge=1, le=100)] = 20 
 ) -> list[dict]:
-    # 원본 복사
+    # 원본 복사 
     result = documents.copy()
-
-    # 부서 조건
+    # 부서 조건 
     if dept is not None:
-        result = [
-            doc for doc in result
-            if doc["dept"] == dept
-        ]
+        result = [doc for doc in result if doc["dept"] == dept]
 
-    #보안 등급 조건
+    # 보안 등급 조건 
     if security_level is not None:
-        result = [
-            doc for doc in result
-            if doc["security_level"] == security_level
-        ]
+        result = [doc for doc in result if doc["security_level"] == security_level]
 
-    # 파일 형식 조건
+    # 파일 형식 조건 
     if file_format is not None:
-        result = [
-            doc for doc in result
-            if doc["file_format"] == file_format
-        ]
-    # limit 조건
+        result = [doc for doc in result if doc["file_format"] == file_format]
+
+    # limit 조건 
     return result[:limit]
-    '''
+
+
+
+# ---- 사용자 요청을 처리해줄 uri 매핑 함수들 -----
+# GET /health 
+@app.get("/health")
+def health() -> dict:
+    return {"status": "ok"}   # 리턴값이 요청에 응답해줄 데이터 
+
+# * 쿼리파라미터 *
+# ex. 문서 목록을 조회하는 함수 : http://127.0.0.1:8000/documents?dept=hr&limit=20
+#                                 http://127.0.0.1:8000/documents
+@app.get("/documents")
+def list_documents(
+    dept:str | None = None, 
+    limit: int = 20
+) -> dict:
+    return {
+        "dept": dept, 
+        "limit": limit
+    }
+
+# * 요청 범위 제한 *
+# ex. 문서 목록 조회시 범위 제한 주기 
+@app.get("/document-limited")
+def list_documenst_limited(
+    dept: str | None = None, 
+    limit: Annotated[int, Query(ge=1, le=100)] = 20
+) -> dict:
+    return {
+        "dept": dept,
+        "limit" : limit
+    }
+
+
+
+
+# * 경로 변수 * 
+# 고정 경로를 위에 배치 
+@app.get("/documents/latest")
+def get_document() -> dict: 
+    return {
+        "doc_id": "latest", 
+        "title" : "latest 문서 제목"
+    }
+
+# 경로 변수를 고정경로 아래에 배치 
+# ex. 특정 문서를 조회하는 함수 
+@app.get("/documents/{doc_id}")
+def get_document2(doc_id: str) -> dict: 
+    return {
+        "doc_id": doc_id, 
+        "title" : f"{doc_id} 문서 제목"
+    }
+
+
+# ex. 타입 검증 - 레벨 조회 
+@app.get("/levels/{level}")
+def get_level(level: int) -> dict:
+    return {"level": level}
+
+
+
+'''

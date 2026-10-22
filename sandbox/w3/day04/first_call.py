@@ -2,7 +2,7 @@ import sys
 from pathlib import Path
 
 # backend 폴더를 모듈 검색 경로로 잡아주기 
-sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "backend")) 
+# sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "backend")) 
 
 import anthropic
 
@@ -31,3 +31,4 @@ response = client.messages.create(
 print(response)
 print("".join(b.text for b in response.content if b.type == "text"))
 print("입력 토큰:", response.usage.input_tokens, ", 출력 토큰:", response.usage.output_tokens)
+print("stop 이유:", response.stop_reason) 

@@ -30,3 +30,6 @@ class EvalWeakType(Base, TimestampMixin):
     count: Mapped[int] = mapped_column(Integer, default=0)
     accuracy: Mapped[str] = mapped_column(String(16), default="-") # 화면에 그대로 출력할 문자열 형태로 저장 
     diagnosis: Mapped[str] = mapped_column(Text, default="")  
+
+
+

@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 # 채팅 라우터 
+
 from fastapi import APIRouter
+
 from app.schemas.chat import AskOut, ChatRequest
 from app.services import chat_service
 
@@ -15,7 +17,7 @@ def create_message(payload: ChatRequest, tools: bool = False) -> AskOut:
     # 서비스에게 사용자 질문 주고 로직처리 시키기 
     return chat_service.ask(question=payload.question)  
 
-# * 추가 *
+
 # 실행 기록 한건 조회 
 @router.get("/runs/{run_id}")
 def read_run(run_id: str) -> dict:
