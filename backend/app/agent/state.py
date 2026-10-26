@@ -13,4 +13,8 @@ class WorkflowState(TypedDict, total=False):
     note: str                     # insufficient가 사용
     trace: Annotated[list[str], operator.add]   
 
+# *추가 
+class LoopState(WorkflowState, total=False):
+    query: str   # 고친 질문 (원 질문은 question)
+    fixes: int   # 몇번 고쳤는지 
 
