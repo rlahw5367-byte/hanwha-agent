@@ -10,6 +10,7 @@ from app.models import ApprovalRequest, AuditLog, User
 from app.tools import registry
 from datetime import datetime, date 
 from sqlalchemy import select, func 
+from app.models import ApprovalRequest, AuditLog, User, SlackMessageLog   # SlackMessageLog 추가 
 
 # 상태값 세트
 WAITING, APPROVED, DONE, REJECTED = ('대기중', '승인', '승인·실행', '반려됨')
@@ -128,14 +129,27 @@ def _decide(req_id: str, approver_id: int, status: str, event: str, note: str=''
         s.add(AuditLog(approval_id=req_id, run_id=row.run_id, actor=user.name, event=event, detail=note))
     return row
 
+# 추가 
+def _log_sent(req_id: str, res: dict, text: str) -> None:
+    with session_scope() as s:
+        s.add(SlackMessageLog(approval_id=req_id, channel=res.get("channel", ""), 
+                              ts=res.get("ts", ""), text=text))
+                              
+# 재개 뒤 결과를 저장, 로그도 저장 
+def _close(req_id: str, status: str, event: str, text: str | None=None) -> None:
+
+# 승인 처리 (메인 함수)
 def approve(*, req_id: str, approver_id: int, checkpointer) -> dict:
-    row = _decide(req_id, approver_id, APPROVED, '승인')
+    row = _decide(req_id, approver_id, APPROVED, '승인') # 승인 처리 
     try:
-        out = _resume(checkpointer, row.thread_id, {'approved': True, 'note': ''})
+        out = _resume(checkpointer, row.thread_id, {'approved': True, 'note': ''}) # 그래프 재개 
     except Exception:
         _close(req_id, '실패 · 재개 오류', '재개 실패')
         raise
     res = out.get('result', {})
+    # 전송 내용 로그화 : 추가 
+    if res.get("ok"):
+        _log_sent(req_id, res, out.get("text", ""))
     status, event = (DONE, 'Slack 전송 완료') if res.get('ok') else (f"실패 · {res.get('error')}", f"전송 안 됨 · {res.get('error')}")
     _close(req_id, status, event)
     return {'req_id': req_id, 'status': status[:24], 'result': res}

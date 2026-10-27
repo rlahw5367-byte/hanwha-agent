@@ -54,9 +54,9 @@ def _detail(item: dict) -> None:
     st.markdown(kv_html_text, unsafe_allow_html=True)
     st.caption('전송될 메시지')
     message_block(item['text'])
-		st.caption("감사 로그")
+    st.caption("감사 로그")
     log_block(item["events"] or ["기록 없음"])
-   
+
     _buttons(item)
 
 def _can_decide(user: dict | None) -> bool: 
