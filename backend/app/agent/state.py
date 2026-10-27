@@ -28,6 +28,6 @@ class ApprovalState(TypedDict, total=False):
 # Supervisor 그래프 상태 
 class SupervisorState(WorkflowState, total=False):
     next: str
-    truns: int
+    turns: int
     draft: dict
     run_id: str
