@@ -7,10 +7,11 @@ import streamlit as st
 
 sys.path.insert(0, str(pathlib.Path(__file__).parent))
 
-from core import router, session  
+from core import router, session, api_client
 from ui.theme import inject_css  
 from views import login as login_view  
 from views import chat as chat_view 
+from views import approvals as approvals_view 
 from views import documents as documents_view 
 from views import document_upload as document_upload_view 
 from views import document_detail as document_detail_view
@@ -29,9 +30,16 @@ inject_css()
 NAV: list[tuple[str, str | None]] = [
     ("AI 업무 도우미", "chat"),      
     ("문서 관리", "documents"),    
-    ("승인함", None),              
+    ("승인함", "approvals"),              
     ("운영 대시보드", None),       
 ]
+
+# 추가 
+def _nav_label(label: str, waiting: int | None) -> str:
+    if label == "승인함" and waiting is not None:
+        return f"{label}  {waiting}"
+    return label
+
 
 # 메뉴(사이드바) 그리기 
 def render_sidebar() -> None:
@@ -59,9 +67,15 @@ def render_sidebar() -> None:
             session.logout()
             st.rerun()      
 
+    waiting: int | None = None
+    try:
+        waiting = api_client.list_approvals(session.emp_no())["summary"]["waiting"]
+    except Exception:
+        pass
+
     # 메뉴 버튼 그리기 
     for label, page_key in NAV:
-        if st.sidebar.button(label, key=f"nav_{label}"):
+        if st.sidebar.button(_nav_label(label, waiting), key=f"nav_{label}"):
             if page_key is None:
                 st.sidebar.info("아직 만들지 않은 화면입니다.")
             else:
@@ -92,6 +106,8 @@ def main() -> None:
         document_upload_view.render()
     elif page == "document_detail":
         document_detail_view.render()
+    elif page == "approvals":
+        approvals_view.render()
     else:
         st.info("아직 만들지 않은 화면입니다.")
 

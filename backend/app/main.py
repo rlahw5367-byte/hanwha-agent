@@ -11,6 +11,8 @@ from contextlib import asynccontextmanager
 from app.core.logging import setup_logging, get_logger
 from fastapi.exceptions import RequestValidationError
 from app.integrations import factory
+from app.api.v1 import auth, documents, chat, ops, approvals
+
 
 log = get_logger(__name__)
 
@@ -65,6 +67,10 @@ app.include_router(
 )
 app.include_router(
     ops.router,
+    prefix="/api/v1"
+)
+app.include_router(
+    approvals.router,
     prefix="/api/v1"
 )
 
