@@ -371,7 +371,7 @@ def _sv_draft(state: dict) -> dict:
     docs = ", ".join(sorted({x["doc_id"] for x in state.get("sources", [])}))
     made = registry.get("create_draft").run(run_id=run_id, doc_type="국내출장 신청서", fields={"요청": state["question"], "근거문서": docs}, user=state["user"])
     
-    with session_scope as s:
+    with session_scope() as s:
         s.get(Run, run_id).status = "완료"
     
     return {"draft": made, "run_id": run_id}

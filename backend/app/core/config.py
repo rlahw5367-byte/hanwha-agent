@@ -58,6 +58,10 @@ class Settings(BaseSettings):
     # 크로스 인코더 점수가 (0~1)가 이 값에 못미치면 근거부족. 
     rerank_threshold: float = Field(default=0.2, ge=0.0, le=1.0)
 
+    # --- 슬랙------------------------------------------------------------
+    slack_bot_token: SecretStr | None = None
+    slack_default_channel: str = "#infra-team2"
+
     # 모델 미리 로딩 
     warn_up_models: bool = True 
     
